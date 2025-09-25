@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request, Form, Depends, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse, JSONResponse
-from starlette.responses import EventSourceResponse
+from sse_starlette.sse import EventSourceResponse
 from sqlmodel import Session, select
 from models import Product, PaymentReport, User
 from db import get_session
