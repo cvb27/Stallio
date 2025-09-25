@@ -1,0 +1,100 @@
+{% extends "admin/layout.html" %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <h1 class="h4 mb-0">Hola, {{ request.session.get('user_name') or request.session.get('user_email') }}</h1>
+    <small class="text-muted">Tu panel de control</small>
+  </div>
+
+  <section class="pb-4 mb-5 border-bottom">
+  <div class="row g-4">
+    
+    <!-- Administrar Órdenes -->
+     
+    <div class="col-12 col-md-6 col-lg-3">
+      <a href="/admin/orders" class="text-decoration-none">
+        <div class="card shadow h-100 border-0 hover-shadow">
+          <div class="card-body d-flex flex-column align-items-center justify-content-center py-5">
+            <div class="mb-3" style="font-size:42px;">
+              <i class="fas fa-clipboard-list"></i>
+            </div>
+            <h5 class="card-title text-center mb-2">Administrar Órdenes</h5>
+            <p class="card-text text-center text-muted">Revisa pagos reportados y marca despachos.</p>
+          </div>
+        </div>
+      </a>
+    </div>
+   
+
+    <!-- Administrar Productos -->
+    <div class="col-12 col-md-6 col-lg-3">
+      <a href="/admin/products" class="text-decoration-none">
+        <div class="card shadow h-100 border-0 hover-shadow">
+          <div class="card-body d-flex flex-column align-items-center justify-content-center py-5">
+            <div class="mb-3" style="font-size:42px;">
+              <i class="fas fa-box-open"></i>
+            </div>
+            <h5 class="card-title text-center mb-2">Administrar Productos</h5>
+            <p class="card-text text-center text-muted">Crea, edita y elimina tus productos.</p>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <!-- Compartir Página -->
+    <div class="col-12 col-md-6 col-lg-3">
+      <a href="/admin/share/" class="text-decoration-none">
+        <div class="card shadow h-100 border-0 hover-shadow">
+          <div class="card-body d-flex flex-column align-items-center justify-content-center py-5">
+            <div class="mb-3" style="font-size:42px;">
+              <i class="fas fa-share-alt"></i>
+            </div>
+            <h5 class="card-title text-center mb-2">Compartir Página</h5>
+            <p class="card-text text-center text-muted">Copia tu link, comparte y descarga tu QR.</p>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <!-- Editar Página -->
+    <div class="col-12 col-md-6 col-lg-3">
+      <a href="/vendor/brand/" class="text-decoration-none">
+        <div class="card shadow h-100 border-0 hover-shadow">
+          <div class="card-body d-flex flex-column align-items-center justify-content-center py-5">
+            <div class="mb-3" style="font-size:42px;">
+              <i class="fas fa-share-alt"></i>
+            </div>
+            <h5 class="card-title text-center mb-2">Editar Página</h5>
+            <p class="card-text text-center text-muted">Personaliza la pagina que muestras a tus clientes.</p>
+          </div>
+        </div>
+      </a>
+    </div>
+ </section>
+    
+    <!-- Soporte -->
+    <div class="col-12 col-md-6 col-lg-3">
+      <!-- Si tienes el atajo /admin/support que redirige al slug, usa ese -->
+      <a href="/admin/support" class="text-decoration-none">
+        <div class="card shadow h-100 border-0 hover-shadow">
+          <div class="card-body d-flex flex-column align-items-center justify-content-center py-5">
+            <div class="mb-3" style="font-size:42px;">
+              <i class="fas fa-life-ring"></i>
+            </div>
+            <h5 class="card-title text-center mb-2">Soporte</h5>
+            <p class="card-text text-center text-muted">WhatsApp, Telegram y correo de ayuda.</p>
+          </div>
+        </div>
+      </a>
+    </div>
+
+  </div>
+</div>
+
+<style>
+  .hover-shadow { transition: transform .08s ease, box-shadow .2s ease; }
+  .hover-shadow:hover { transform: translateY(-2px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.15); }
+</style>
+{% endblock %}

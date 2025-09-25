@@ -1,0 +1,148 @@
+{% extends "admin/layout.html" %}
+{% block title %}Editar mi página{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <h1 class="h4 mb-0">Editar mi página</h1>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-secondary btn-sm" target="_blank" href="/u/{{ branding.slug }}">Ver página pública</a>
+      <button class="btn btn-primary btn-sm" id="btnCopy">Copiar URL</button>
+    </div>
+  </div>
+
+  {% if request.query_params.get("ok") %}
+    <div class="alert alert-success">Cambios guardados correctamente.</div>
+  {% endif %}
+  {% if request.query_params.get("err") %}
+    <div class="alert alert-danger">{{ request.query_params.get("err") }}</div>
+  {% endif %}
+
+  <div class="row">
+    <div class="col-lg-8">
+      <div class="card shadow mb-4">
+        <div class="card-header py-3">
+          <h6 class="m-0 font-weight-bold text-primary">Datos básicos</h6>
+        </div>
+        <div class="card-body">
+          <form method="post" enctype="multipart/form-data" id="brandForm">
+            <input type="hidden" name="branding_id" value="{{ branding.id if branding else '' }}">
+            <div class="mb-3">
+              <label class="form-label">Nombre que aparece en la página</label>
+              <input class="form-control" type="text" name="display_name" value="{{ branding.display_name }}" maxlength="60" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Eslogan (Opcional)</label>
+              <input class="form-control" type="text" name="tagline"
+                     value="{{ branding.settings.tagline if branding and branding.settings else '' }}"
+                     maxlength="120" placeholder="La mejor selección para ti">
+              <small class="text-muted">Texto breve que aparece bajo el título del Home.</small>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">WhatsApp (Opcional)</label>
+              <input class="form-control" type="tel" name="whatsapp"
+                     value="{{ branding.settings.whatsapp if branding and branding.settings else '' }}"
+                     placeholder="+1 555 555 5555">
+              <small class="text-muted">Se usará para abrir un chat en WhatsApp y puedan escribirte un mensaje..</small>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Instagram (Opcional)</label>
+              <input class="form-control" type="text" name="instagram"
+                     value="{{ branding.settings.instagram if branding and branding.settings else '' }}"
+                     placeholder="@mi_cuenta o https://instagram.com/mi_cuenta">
+              <small class="text-muted">Puedes pegar la URL completa de tu cuenta o solo el usuario (con o sin @).</small>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Ubicación (Opcional)</label>
+                <input type="text" name="location" class="form-control"
+                       placeholder="Ciudad, dirección…"
+                       value="{{ branding.settings.location if branding and branding.settings else '' }}">
+            <small class="text-muted">Visible en el pie de página. Ej.: “Orlando, FL”</small>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Slug (Opcional) (URL corta)</label>
+              <div class="input-group">
+                <span class="input-group-text">/u/</span>
+                <input class="form-control" type="text" name="slug" id="slug"
+                       value="{{ branding.slug }}" pattern="^[a-z0-9-]{3,}$" aria-describedby="slugHelp">
+              </div>
+              <small id="slugHelp" class="form-text text-muted">
+                Solo minúsculas, números y guiones. Ej: <code>mi-tienda</code>
+              </small>
+            </div>
+            
+            <div class="mb-3">
+              <label class="form-label">Logo (PNG/JPG/WEBP) (Opcional)</label>
+              <input class="form-control" type="file" name="logo" accept=".png,.jpg,.jpeg,.webp">
+              {% if branding.logo_url %}
+                <div class="mt-2">
+                  <img src="{{ branding.logo_url }}" alt="logo" style="height:48px;border-radius:8px">
+                </div>
+              {% endif %}
+            </div>
+
+            <div class="d-grid">
+              <button class="btn btn-primary" type="submit">Guardar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card shadow mb-4">
+        <div class="card-header py-3">
+          <h6 class="m-0 font-weight-bold text-primary">Vista rápida</h6>
+        </div>
+        <div class="card-body">
+          <div class="d-flex align-items-center gap-3">
+            {% if branding.logo_url %}
+              <img src="{{ branding.settings.logo_url }}" alt="logo" style="height:48px;border-radius:8px">
+            {% endif %}
+            <strong id="liveName">{{ branding.display_name }}</strong>
+          </div>
+          <div class="mt-3 small text-muted">
+            URL pública:
+            <a href="/u/{{ branding.slug }}" target="_blank">/u/{{ branding.slug }}</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Normaliza slug en vivo
+  const $slug = document.getElementById('slug');
+  if ($slug){
+    $slug.addEventListener('input', () => {
+      let v = $slug.value.toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9-]+/g,'-').replace(/^-+|-+$/g,'');
+      $slug.value = v;
+    });
+  }
+  // Vista previa del nombre
+  const $name = document.querySelector('input[name="display_name"]');
+  const $live = document.getElementById('liveName');
+  if ($name && $live){
+    $name.addEventListener('input', ()=> { $live.textContent = $name.value || 'Mi Tienda'; });
+  }
+  // Vista previa del eslogan
+  const $tag = document.querySelector('input[name="tagline"]');
+  if ($tag) { $tag.addEventListener('input', ()=> {/* si tienes preview, actualízala aquí */}); }
+
+  // Copiar URL
+  const $btnCopy = document.getElementById('btnCopy');
+  if ($btnCopy){
+    $btnCopy.addEventListener('click', async () => {
+      try{
+        const url = location.origin + '/u/' + ($slug?.value || '{{ branding.slug }}');
+        await navigator.clipboard.writeText(url);
+        $btnCopy.textContent = 'Copiado';
+        setTimeout(()=> $btnCopy.textContent='Copiar URL', 1500);
+      }catch(e){}
+    });
+  }
+</script>
+{% endblock %}

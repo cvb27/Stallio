@@ -1,0 +1,350 @@
+{% extends "public/layout.html" %}
+{% block content %}
+
+
+{# ====================== HERO / ENCABEZADO ====================== #}
+<header class="hero-modern text-white"
+        style="--brand-primary: {{ theme.primary }}; --brand-accent: {{ theme.accent }};">
+
+  <div class="container d-flex align-items-center flex-column text-center">
+
+    {# Logo (si existe) o avatar por defecto #}
+    <img class="hero-logo mb-4"
+         src="{{ (branding.settings.logo_url if branding and branding.settings and branding.settings.logo_url else '/static/public/assets/img/default-store.svg') }}"
+         alt="logo">
+
+    <h1 class="hero-title text-uppercase mb-2">{{ theme.title }}</h1>
+
+    <p class="hero-subtitle mb-2">{{ theme.tagline }}</p>
+
+    <div class="hero-cta d-flex gap-2 flex-wrap justify-content-center">
+      {# 
+      <a class="btn btn-light btn-lg px-4" href="#menu">
+        <i class="fas fa-utensils me-2"></i> Ver menú
+      </a>
+      #}
+      {# HERO CTA (iconos sociales) #}
+
+<div class="hero-socials">
+  {% if theme.wa %}
+        <a aria-label="WhatsApp"
+           href="https://wa.me/{{ theme.wa | replace('+','') }}" target="_blank" rel="noopener">
+          <i class="fab fa-whatsapp"></i>
+        </a>
+      {% endif %}
+
+  {% if theme.ig %}
+        <a aria-label="Instagram"
+           href="https://instagram.com/{{ theme.ig }}" target="_blank" rel="noopener">
+          <i class="fab fa-instagram"></i>
+        </a>
+      {% endif %}
+</div>
+    </div>
+  </div>
+</header>
+
+{# ====================== SECCIÓN DE PRODUCTOS ====================== #}
+<section class="page-section" id="menu">
+  <div class="container">
+    <h2 class="section-title text-center text-uppercase text-secondary mb-3">Menú de Productos</h2>
+    <div class="divider-modern mb-5">
+      <span class="line"></span><span class="icon"></span><span class="line"></span>
+    </div>
+
+    <div id="products-grid" class="row g-4">
+      {% for p in products %}
+      <div class="col-12 col-sm-6 col-lg-4"
+           data-product-id="{{ p.id }}"
+           data-product-name="{{ p.name }}"
+           data-product-price="{{ p.price }}"
+           data-product-img="{{ p.image_url or '/static/public/assets/img/portfolio/cabin.png' }}">
+
+        <div class="card product-card h-100" onclick="openProductModal({{ p.id }})"
+             data-bs-toggle="modal" data-bs-target="#modalProduct">
+          <div class="ratio ratio-4x3 product-thumb">
+            <img src="{{ p.image_url or '/static/public/assets/img/portfolio/cabin.png' }}"
+                 class="card-img-top" alt="{{ p.name }}">
+          </div>
+          <div class="card-body text-center">
+            <h5 class="card-title mb-1">{{ p.name }}</h5>
+            <div class="price-badge mb-2">${{ '%.2f'|format(p.price) }}</div>
+            {% if p.description %}
+              <p class="card-text product-desc mb-0">{{ p.description }}</p>
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{# ====================== MODAL (igual lógica, solo encabezado más limpio) ====================== #}
+<div class="modal fade" id="modalProduct" tabindex="-1" aria-labelledby="modalProductLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+
+      <div class="modal-header border-0">
+        <h5 class="modal-title" id="modalProductLabel">Producto</h5>
+        <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+
+      <form id="formReport" method="post" action="/u/{{ (branding.slug if branding else vendor.slug) }}/report-payment">
+        <input type="hidden" name="product_id" id="rp_product_id">
+
+        <div class="modal-body pt-0">
+          <div class="row g-4">
+            <div class="col-md-5 text-center">
+              <img id="rp_img" src="" class="img-fluid rounded mb-3" alt="">
+              <div class="alert alert-light text-start small" id="rp_payment_info" style="white-space:pre-wrap;"></div>
+            </div>
+
+            <div class="col-md-7">
+              <div class="mb-3">
+                <label class="form-label">Producto</label>
+                <input type="text" id="rp_name" class="form-control" readonly>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Precio</label>
+                <input type="text" id="rp_price" class="form-control" readonly>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Cantidad</label>
+                <input type="number" name="qty" id="rp_qty" value="1" min="1" class="form-control">
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Monto a reportar</label>
+                <div class="d-flex align-items-center gap-4">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="amount_type" id="rp_type50" value="50" checked>
+                    <label class="form-check-label" for="rp_type50">50% (abono)</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="amount_type" id="rp_type100" value="100">
+                    <label class="form-check-label" for="rp_type100">100% (total)</label>
+                  </div>
+                </div>
+                <small class="text-muted d-block mt-1">A pagar: <b id="rp_amount_view">$0.00</b></small>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Tu nombre</label>
+                <input type="text" name="payer_name" class="form-control" placeholder="Nombre y apellido">
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Teléfono</label>
+                <input type="tel" name="phone" class="form-control" placeholder="+1 555 555 5555">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer border-0">
+          <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Cancelar</button>
+          <button class="btn btn-primary" type="submit">Reportar pago</button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</div>
+
+{# ====================== JS (idéntico, solo pequeños ajustes de clases BS5) ====================== #}
+<script>
+function esc(s){
+  return String(s ?? "")
+    .replaceAll("&","&amp;").replaceAll("<","&lt;")
+    .replaceAll(">","&gt;").replaceAll('"',"&quot;");
+}
+let PAYMENT_INFO_CACHE = null;
+
+async function fetchPaymentInfo(){
+  if (PAYMENT_INFO_CACHE) return PAYMENT_INFO_CACHE;
+  const r = await fetch("/public/payment-info");
+  PAYMENT_INFO_CACHE = await r.json();
+  return PAYMENT_INFO_CACHE;
+}
+function money(n){ return "$" + Number(n).toFixed(2); }
+
+function recalcAmount(){
+  const price = parseFloat(document.getElementById("rp_price").dataset.value || "0");
+  const qty   = parseInt(document.getElementById("rp_qty").value || "1", 10);
+  const type  = document.getElementById("rp_type100").checked ? 1.0 : 0.5;
+  const amount = price * qty * type;
+  document.getElementById("rp_amount_view").textContent = money(amount);
+}
+
+function formatPaymentInfo(info){
+  const lines = [];
+  if (info.title)   lines.push("** " + info.title + " **");
+  if (info.zelle)   lines.push("Zelle: "   + info.zelle);
+  if (info.bank)    lines.push("Banco: "   + info.bank);
+  if (info.cashapp) lines.push("CashApp: " + info.cashapp);
+  if (info.bizum)   lines.push("Bizum: "   + info.bizum);
+  if (info.btc)     lines.push("BTC: "     + info.btc);
+  if (info.notes)   lines.push(info.notes);
+  return lines.join("\n");
+}
+
+async function openProductModal(id){
+  const card = document.querySelector(`[data-product-id="${id}"]`);
+  const name  = card.dataset.productName;
+  const price = parseFloat(card.dataset.productPrice);
+  const img   = card.dataset.productImg;
+
+  document.getElementById("rp_product_id").value = id;
+  document.getElementById("rp_name").value = name;
+
+  const priceInput = document.getElementById("rp_price");
+  priceInput.value = money(price);
+  priceInput.dataset.value = String(price);
+
+  document.getElementById("rp_img").src = img;
+  document.getElementById("rp_qty").value = 1;
+  document.getElementById("rp_type50").checked = true;
+
+  const info = await fetchPaymentInfo();
+  document.getElementById("rp_payment_info").textContent = formatPaymentInfo(info);
+
+  recalcAmount();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.addEventListener("change", (e) => {
+    if (e.target.id === "rp_qty" || e.target.id === "rp_type50" || e.target.id === "rp_type100") {
+      recalcAmount();
+    }
+  });
+
+  const form = document.getElementById("formReport");
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const fd = new FormData(form);
+    try {
+      const r = await fetch(form.action, { method: "POST", body: fd });
+      const text = await r.text();
+      if (!r.ok){ alert("No se pudo reportar: " + text.slice(0,160)); return; }
+      let data; try { data = JSON.parse(text); } catch { alert("Respuesta no válida del servidor."); return; }
+      if (data.ok){
+        alert("¡Pago reportado! (ID " + data.report_id + ")");
+        const modalEl = document.getElementById('modalProduct');
+        const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+        modal.hide();
+      } else {
+        alert("No se pudo reportar: " + (data.error || "error"));
+      }
+    } catch (err) { alert("Error de red: " + err.message); }
+  });
+});
+
+// WebSocket para refrescar productos (igual que antes)
+(function(){
+  if (window.__pubWS) { try { window.__pubWS.close(); } catch(_){} }
+  const proto = (location.protocol === "https:") ? "wss" : "ws";
+  const ws = new WebSocket(`${proto}://${location.host}/ws/public`);
+  window.__pubWS = ws;
+  ws.onmessage = (ev) => {
+    try { const msg = JSON.parse(ev.data);
+      if (msg.type === "products_changed") { loadProducts(); }
+    } catch(_) {}
+  };
+  window.addEventListener("beforeunload", () => { try { ws.close(); } catch(_) {} });
+})();
+
+async function loadProducts(){
+  const slug = "{{ (branding.slug if branding else vendor.slug) }}";
+  try{
+    const r = await fetch("/u/{{ vendor.slug }}/products.json", { cache: "no-store" });
+    const data = await r.json();
+    const grid = document.getElementById("products-grid");
+    grid.innerHTML = data.map(p => `
+      <div class="col-12 col-sm-6 col-lg-4"
+           data-product-id="${p.id}"
+           data-product-name="${esc(p.name)}"
+           data-product-price="${p.price}"
+           data-product-img="${p.image_url || '/static/public/assets/img/portfolio/cabin.png'}">
+        <div class="card product-card h-100" data-bs-toggle="modal" data-bs-target="#modalProduct"
+             onclick="openProductModal(${p.id})">
+          <div class="ratio ratio-4x3 product-thumb">
+            <img src="${p.image_url || '/static/public/assets/img/portfolio/cabin.png'}" class="card-img-top" alt="${esc(p.name)}">
+          </div>
+          <div class="card-body text-center">
+            <h5 class="card-title mb-1">${esc(p.name)}</h5>
+            <div class="price-badge mb-2">$${Number(p.price).toFixed(2)}</div>
+            ${p.description ? `<p class="card-text product-desc mb-0">${esc(p.description)}</p>` : ""}
+          </div>
+        </div>
+      </div>
+    `).join("");
+  }catch(e){ console.error("No se pudo actualizar productos:", e); }
+}
+</script>
+
+{# ====================== ESTILOS LOCALES (mínimos) ====================== #}
+<style>
+/* Colores de marca (si existen) */
+:root{
+  --brand-primary: {{ theme.primary if theme else '#111827' }};
+  --brand-accent:  {{ theme.accent  if theme else '#2563eb' }};
+}
+
+/* Hero moderno con degradado + overlay */
+
+.hero-modern{
+  padding: 120px 0 64px;
+  background:
+    linear-gradient(180deg, rgba(0,0,0,.25), rgba(0,0,0,.25)),
+    radial-gradient(60% 120% at 50% -10%, var(--brand-accent), var(--brand-primary));
+}
+.hero-logo{ width:110px; height:110px; border-radius:18px; object-fit:cover; box-shadow:0 10px 30px rgba(0,0,0,.25); }
+.hero-title{ font-weight: 800; letter-spacing: .06em; }
+.hero-subtitle{ opacity: .95; font-size: 1.05rem; }
+
+/* Divider moderno */
+.divider-modern{ display:flex; align-items:center; justify-content:center; gap:.75rem; }
+.divider-modern .line{ width:100px; height:2px; background:#e5e7eb; }
+.divider-modern .icon{ display:grid; place-items:center; width:36px; height:36px; border-radius:50%; background:#e5e7eb; color:#374151; }
+
+/* Tarjetas de producto */
+.product-card{ border:0; border-radius:16px; overflow:hidden; box-shadow:0 8px 24px rgba(0,0,0,.08); transition:transform .15s, box-shadow .15s; cursor:pointer; }
+.product-card:hover{ transform:translateY(-4px); box-shadow:0 16px 32px rgba(0,0,0,.12); }
+.product-thumb img{ object-fit:cover; }
+
+/* Precios con el azul del tema */
+.price-badge{
+  display:inline-block; padding:.25rem .55rem; border-radius:999px;
+  background: color-mix(in oklab, var(--brand-accent) 12%, white);
+  color: var(--brand-accent); font-weight:700;
+}
+
+/* Limitar descripción a 3 líneas */
+.product-desc{
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden; 
+  text-overflow: ellipsis;
+  line-height: 1.25rem; 
+  min-height: calc(1.25rem * 3);
+}
+
+/* Iconos sociales */
+.hero-socials{ display:flex; gap:.5rem; justify-content:center; margin-top:.5rem; }
+.hero-socials a{
+  width:36px; height:36px; border-radius:999px; display:grid; place-items:center;
+  border:1px solid color-mix(in oklab, var(--brand-accent) 40%, white);
+  color:#fff; text-decoration:none; transition:background .15s, transform .15s, border-color .15s;
+}
+.hero-socials a:hover{
+  transform:translateY(-2px);
+  background: color-mix(in oklab, var(--brand-accent) 20%, black);
+  border-color: var(--brand-accent);
+}
+</style>
+{% endblock %}

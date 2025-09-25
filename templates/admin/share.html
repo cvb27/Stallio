@@ -1,0 +1,116 @@
+{% extends "admin/layout.html" %}
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex align-items-center justify-content-between mb-4">
+      <h1 class="h4 mb-4">Compartir mi página</h1>
+  </div>
+  <div class="row">
+    <!-- Link directo -->
+    <div class="col-lg-6">
+      <div class="card shadow mb-4">
+        <div class="card-header">
+          <strong>Enlace público de tu tienda</strong>
+        </div>
+        <div class="card-body">
+          <div class="input-group">
+            <input id="publicUrl" type="text" class="form-control" value="{{ public_url }}" readonly>
+            <button class="btn btn-outline-primary" id="btnCopy">Copiar</button>
+          </div>
+          <small class="text-muted">Comparte este link con tus clientes.</small>
+          <hr>
+
+          <button class="btn btn-primary" id="btnShare">
+            Compartir
+          </button>
+          <small class="text-muted ms-2">(Usa las opciones del dispositivo si están disponibles)</small>
+
+          <div id="shareOptions" class="mt-3" style="display:none;">
+            <div class="d-flex flex-wrap gap-2">
+              <a id="shareWA" class="btn btn-success" target="_blank" rel="noopener">
+                WhatsApp
+              </a>
+              <a id="shareTG" class="btn btn-info" target="_blank" rel="noopener">
+                Telegram
+              </a>
+              <a id="shareMail" class="btn btn-secondary" target="_blank" rel="noopener">
+                Email
+              </a>
+              <a id="shareFB" class="btn btn-primary" target="_blank" rel="noopener">
+                Facebook
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Código QR -->
+    <div class="col-lg-6">
+      <div class="card shadow mb-4">
+        <div class="card-header">
+          <strong>Código QR</strong>
+        </div>
+        <div class="card-body text-center">
+          <img id="qrImg" src="/admin/share/qr.png" alt="QR" class="img-fluid" style="max-width: 280px;">
+          <div class="mt-3">
+            <a class="btn btn-outline-dark" href="/admin/share/qr.png" download="mi_tienda_qr.png">Descargar QR</a>
+          </div>
+          <small class="text-muted d-block mt-2">Imprímelo o compártelo por chat.</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Snippet embebible -->
+  <div class="card shadow mb-4">
+    <div class="card-header">
+      <strong>Insertar un botón en otra página (embed)</strong>
+    </div>
+    <div class="card-body">
+      <p class="mb-2">Copia este código HTML para poner un botón que lleve a tu tienda:</p>
+      <pre class="bg-light p-3 rounded"><code>&lt;a href="{{ public_url }}" target="_blank" rel="noopener" style="display:inline-block;padding:.5rem 1rem;border-radius:.5rem;background:#0d6efd;color:#fff;text-decoration:none;font-family:sans-serif"&gt;Visitar mi tienda&lt;/a&gt;</code></pre>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const url = "{{ public_url }}";
+  const title = "Visita mi tienda";
+  const text  = "Hola 👋, te comparto el link de mi tienda:";
+
+  // Copiar al portapapeles
+  document.getElementById("btnCopy").addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      alert("Link copiado al portapapeles");
+    } catch (e) {
+      // fallback
+      const input = document.getElementById("publicUrl");
+      input.select(); document.execCommand("copy");
+      alert("Link copiado");
+    }
+  });
+
+  // Web Share API (si existe), si no, mostrar opciones
+  const btnShare = document.getElementById("btnShare");
+  const options  = document.getElementById("shareOptions");
+  btnShare.addEventListener("click", async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, text, url });
+      } catch(_) {}
+    } else {
+      options.style.display = "block";
+    }
+  });
+
+  // Enlaces pre-armados
+  const enc = encodeURIComponent;
+  document.getElementById("shareWA").href   = "https://wa.me/?text=" + enc(text + " " + url);
+  document.getElementById("shareTG").href   = "https://t.me/share/url?url=" + enc(url) + "&text=" + enc(text);
+  document.getElementById("shareMail").href = "mailto:?subject=" + enc(title) + "&body=" + enc(text + " " + url);
+  document.getElementById("shareFB").href   = "https://www.facebook.com/sharer/sharer.php?u=" + enc(url);
+})();
+</script>
+{% endblock %}

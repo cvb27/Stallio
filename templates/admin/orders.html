@@ -1,0 +1,196 @@
+{% extends "admin/layout.html" %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <h1 class="h4 mb-0">Administrar Órdenes</h1>
+    <button class="btn btn-outline-primary btn-sm" onclick="reloadAll()">Recargar todo</button>
+  </div>
+
+  <!-- Pendientes -->
+  <div class="card shadow mb-4">
+    <div class="card-header d-flex align-items-center justify-content-between">
+      <h5 class="mb-0">Órdenes / Pagos reportados</h5>
+      <button class="btn btn-outline-primary btn-sm" onclick="reloadPending()">Recargar</button>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-sm table-striped">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Fecha</th>
+              <th>Producto</th>
+              <th>Cant.</th>
+              <th>Abono</th>
+              <th>Monto</th>
+              <th>Cliente</th>
+              <th>Teléfono</th>
+              <th style="width:120px;">Acción</th>
+            </tr>
+          </thead>
+          <tbody id="orders-body">
+            {% for o in orders %}
+            <tr data-row-id="{{ o.id }}">
+              <td>#{{ o.id }}</td>
+              <td>{{ o.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+              <td>{{ o.product_name }}</td>
+              <td>{{ o.qty }}</td>
+              <td>{{ '50%' if o.amount_type == '50' else '100%' }}</td>
+              <td>${{ '%.2f'|format(o.amount) }}</td>
+              <td>{{ o.payer_name or '-' }}</td>
+              <td>{{ o.phone or '-' }}</td>
+              <td>
+                <button class="btn btn-success btn-sm" onclick="dispatchOrder({{ o.id }})">
+                  <i class="fas fa-check"></i> Despachar
+                </button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <small class="text-muted">Se actualiza automáticamente cuando un cliente reporta pago.</small>
+    </div>
+  </div>
+
+  <!-- Despachadas -->
+  <div class="card shadow mb-4">
+    <div class="card-header d-flex align-items-center justify-content-between">
+      <h5 class="mb-0">Órdenes despachadas</h5>
+      <button class="btn btn-outline-primary btn-sm" onclick="reloadDispatched()">Recargar</button>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-sm table-striped">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Fecha</th>
+              <th>Producto</th>
+              <th>Cant.</th>
+              <th>Abono</th>
+              <th>Monto</th>
+              <th>Cliente</th>
+              <th>Teléfono</th>
+              <th>Despachado</th>
+            </tr>
+          </thead>
+          <tbody id="dispatched-body">
+            {% for o in dispatched %}
+            <tr data-row-id="{{ o.id }}">
+              <td>#{{ o.id }}</td>
+              <td>{{ o.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+              <td>{{ o.product_name }}</td>
+              <td>{{ o.qty }}</td>
+              <td>{{ '50%' if o.amount_type == '50' else '100%' }}</td>
+              <td>${{ '%.2f'|format(o.amount) }}</td>
+              <td>{{ o.payer_name or '-' }}</td>
+              <td>{{ o.phone or '-' }}</td>
+              <td>{{ o.dispatched_at.strftime('%Y-%m-%d %H:%M') if o.dispatched_at else '-' }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <small class="text-muted">Histórico de órdenes ya despachadas.</small>
+    </div>
+  </div>
+</div>
+
+<script>
+function formatLocal(dtIso){
+  if (!dtIso) return "-";
+  const d = new Date(dtIso);
+  return new Intl.DateTimeFormat(undefined, {
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", hour12: false
+  }).format(d).replace(',', '');
+}
+function money(n){ return "$" + Number(n).toFixed(2); }
+
+async function reloadPending(){
+  const r = await fetch("/admin/orders/list.json", { cache: "no-store" });
+  const data = await r.json();
+  const tb = document.getElementById("orders-body");
+  tb.innerHTML = data.map(o => `
+    <tr data-row-id="${o.id}">
+      <td>#${o.id}</td>
+      <td>${formatLocal(o.created_at)}</td>
+      <td>${o.product_name}</td>
+      <td>${o.qty}</td>
+      <td>${o.amount_type === "50" ? "50%" : "100%"}</td>
+      <td>${money(o.amount)}</td>
+      <td>${o.payer_name || "-"}</td>
+      <td>${o.phone || "-"}</td>
+      <td>
+        <button class="btn btn-success btn-sm" onclick="dispatchOrder(${o.id})">
+          <i class="fas fa-check"></i> Despachar
+        </button>
+      </td>
+    </tr>
+  `).join("");
+}
+
+async function reloadDispatched(){
+  const r = await fetch("/admin/orders/dispatched.json", { cache: "no-store" });
+  const data = await r.json();
+  const tb = document.getElementById("dispatched-body");
+  tb.innerHTML = data.map(o => `
+    <tr data-row-id="${o.id}">
+      <td>#${o.id}</td>
+      <td>${formatLocal(o.created_at)}</td>
+      <td>${o.product_name}</td>
+      <td>${o.qty}</td>
+      <td>${o.amount_type === "50" ? "50%" : "100%"}</td>
+      <td>${money(o.amount)}</td>
+      <td>${o.payer_name || "-"}</td>
+      <td>${o.phone || "-"}</td>
+      <td>${formatLocal(o.dispatched_at)}</td>
+    </tr>
+  `).join("");
+}
+
+async function dispatchOrder(id){
+  if (!confirm("¿Marcar esta orden como despachada?")) return;
+  try{
+    const r = await fetch(`/admin/orders/dispatch/${id}`, { method: "POST" });
+    const data = await r.json();
+    if (data.ok){
+      await reloadPending();
+      await reloadDispatched();
+    }else{
+      alert("No se pudo despachar: " + (data.detail || "error"));
+    }
+  }catch(e){
+    alert("Error de red: " + e);
+  }
+}
+
+function reloadAll(){ reloadPending(); reloadDispatched(); }
+
+document.addEventListener("DOMContentLoaded", () => {
+  reloadAll();
+
+  // WebSocket en vivo (si ya lo tienes montado en /ws/public)
+  if (window.__pubWS) { try { window.__pubWS.close(); } catch(_){} }
+  const proto = (location.protocol === "https:") ? "wss" : "ws";
+  const ws = new WebSocket(`${proto}://${location.host}/ws/public`);
+  window.__pubWS = ws;
+
+  ws.onmessage = async (ev) => {
+    try{
+      const msg = JSON.parse(ev.data);
+      if (msg.type === "payment_reported"){
+        await reloadPending();
+      } else if (msg.type === "order_dispatched"){
+        await reloadPending();
+        await reloadDispatched();
+      }
+    }catch(e){ console.warn(e); }
+  };
+
+  window.addEventListener("beforeunload", () => { try { ws.close(); } catch(_){} });
+});
+</script>
+{% endblock %}

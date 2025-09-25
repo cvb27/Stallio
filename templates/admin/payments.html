@@ -1,0 +1,31 @@
+{% extends "admin/layout.html" %}
+
+{% block content %}
+<h1 class="h3 mb-4 text-gray-800">Reportes de pago</h1>
+<div class="card shadow">
+  <div class="card-body table-responsive">
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Fecha</th><th>Pedido</th><th>Monto</th><th>Método</th><th>Total?</th><th>Referencia</th><th>Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for r in reports %}
+        <tr>
+          <td>{{ r["created_at"] }}</td>
+          <td>{{ r["order_ref"] }}</td>
+          <td>{{ '%.2f'|format(r["amount"]) }}</td>
+          <td>{{ r["method"] }}</td>
+          <td>{{ "Sí" if r["is_full"] else "Parcial" }}</td>
+          <td>{{ r["reference"] or "-" }}</td>
+          <td>{{ r["status"] }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="7" class="text-center text-muted">Sin reportes.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,101 @@
+{% extends "admin/layout.html" %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <!-- Encabezado -->
+ 
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <h1 class="h4 mb-0">Soporte</h1>
+  </div>
+
+  <div class="row">
+    <div class="col-xl-8 col-lg-9">
+
+      <!-- Card principal -->
+      <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex align-items-center justify-content-between">
+          <h6 class="m-0 font-weight-bold text-primary">Canales de soporte</h6>
+        </div>
+        <div class="card-body">
+
+          <!-- Descripción -->
+          <p class="mb-4">
+            ¿Necesitas ayuda ? Elige uno de nuestros canales de soporte para contactar a
+            <strong>{{ brand }}</strong>.
+          </p>
+
+          <!-- Canal: Email -->
+          <div class="mb-4">
+            <h5 class="mb-2"><i class="fas fa-envelope mr-2"></i>Correo</h5>
+            <div class="d-flex align-items-center flex-wrap">
+              <span class="mr-3 text-monospace" id="support-email">{{ support_email }}</span>
+              <a href="{{ mailto_link }}" class="btn btn-sm btn-primary mr-2">
+                Enviar correo
+              </a>
+              <button class="btn btn-sm btn-outline-secondary" onclick="copyEmail()">
+                Copiar correo
+              </button>
+            </div>
+            <small class="text-muted d-block mt-2">Se abrirá tu cliente de correo con el asunto y mensaje prellenados.</small>
+          </div>
+
+          <hr>
+
+          <!-- Canal: WhatsApp -->
+          <div class="mb-4">
+            <h5 class="mb-2"><i class="fab fa-whatsapp mr-2"></i>WhatsApp</h5>
+            <a href="{{ wa_link }}" target="_blank" rel="noopener" class="btn btn-success">
+              Escribenos via WhatsApp
+            </a>
+            <small class="text-muted d-block mt-2">
+              Se abrirá un chat con mensaje de saludo listo para enviar.
+            </small>
+          </div>
+
+          <hr>
+
+          <!-- Canal: Telegram -->
+          <div class="mb-2">
+            <h5 class="mb-2"><i class="fab fa-telegram-plane mr-2"></i>Telegram</h5>
+            <a href="{{ tg_link }}" target="_blank" rel="noopener" class="btn btn-info">
+              Ir al grupo de soporte
+            </a>
+            <small class="text-muted d-block mt-2">
+              Accede a nuestro grupo de soporte en Telegram.
+            </small>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Info adicional (opcional) -->
+      <div class="card shadow">
+        <div class="card-body">
+          <h6 class="font-weight-bold mb-2">Consejos para atención más rápida</h6>
+          <ul class="mb-0">
+            <li>Incluye el <strong>ID de pedido</strong> si lo tienes.</li>
+            <li>Describe brevemente el problema.</li>
+            <li>Adjunta capturas (si aplica).</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+function copyEmail(){
+  const el = document.getElementById("support-email");
+  const text = el ? el.textContent.trim() : "";
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => {
+    // pequeño feedback visual
+    const original = el.textContent;
+    el.textContent = original + " ✓";
+    setTimeout(() => { el.textContent = original; }, 900);
+  });
+}
+</script>
+{% endblock %}

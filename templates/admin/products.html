@@ -1,0 +1,167 @@
+{% extends "admin/layout.html" %}
+{% block content %}
+
+<div class="container-fluid">
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <h1 class="h4 mb-0">Menú de Productos</h1>
+    <button class="btn btn-outline-primary btn-sm" onclick="reloadAll()">Recargar</button>
+  </div>
+<section class="page-section portfolio" id="portfolio">
+  <div class="card shadow mb-4">
+    <div class="card-header d-flex align-items-center justify-content-between">
+      <button class="btn btn-primary" data-toggle="modal" data-target="#modalCreateProduct">
+        <i class="fas fa-plus mr-1"></i> Nuevo producto
+      </button>
+    </div>
+  <div class="container">
+    <div class="divider-custom">
+      <div class="divider-custom-line"></div>    
+      <div class="divider-custom-line"></div>
+    </div>
+
+    <!-- Grid de productos -->
+    <div class="row justify-content-center">
+      {% for p in products %}
+      <div class="col-md-6 col-lg-4 mb-5">
+        <div class="portfolio-item mx-auto" data-toggle="modal" data-target="#modalEdit{{ p.id }}">
+          <div class="portfolio-item-caption d-flex align-items-center justify-content-center h-100 w-100">
+            <div class="portfolio-item-caption-content text-center text-white">
+              <i class="fas fa-edit fa-2x"></i>
+            </div>
+          </div>
+          <img class="img-fluid"
+               src="{{ p.image_url or '/static/public/assets/img/portfolio/cabin.png' }}"
+               alt="{{ p.name }}" />
+          <div class="mt-2 text-center">
+            <strong>{{ p.name }}</strong><br>
+            <small>${{ '%.2f'|format(p.price) }} · Stock: {{ p.stock }}</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal editar producto -->
+      <div class="modal fade" id="modalEdit{{ p.id }}" tabindex="-1" role="dialog" aria-labelledby="modalEditLabel{{ p.id }}" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+          <div class="modal-content">
+
+            <div class="modal-header">
+              <h5 class="modal-title" id="modalEditLabel{{ p.id }}">Editar: {{ p.name }} (ID {{ p.id }})</h5>
+              <button class="close" type="button" data-dismiss="modal" aria-label="Cerrar">
+                <span aria-hidden="true">×</span>
+              </button>
+            </div>
+
+            <form id="formUpdate{{ p.id }}" action="/admin/products/update/{{ p.id }}" method="post" enctype="multipart/form-data">
+              <div class="modal-body">
+                <div class="row">
+                  <div class="col-md-5 text-center">
+                    <img src="{{ p.image_url or '/static/public/assets/img/portfolio/cabin.png' }}"
+                         class="img-fluid mb-3" alt="{{ p.name }}">
+                    <div class="form-group">
+                      <label>Imagen (opcional)</label>
+                      <input type="file" name="image" accept="image/*" class="form-control-file">
+                      <small class="text-muted d-block mt-1">Si subes una nueva imagen, despues de guardar los cambios, reemplazará a la actual.</small>
+                    </div>
+                  </div>
+                  <div class="col-md-7">
+                    <div class="form-group">
+                      <label>Nombre *</label>
+                      <input type="text" name="name" value="{{ p.name }}" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                      <label>Precio *</label>
+                      <input type="number" step="0.01" name="price" value="{{ '%.2f'|format(p.price) }}" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                      <label>Stock</label>
+                      <input type="number" name="stock" value="{{ p.stock }}" min="0" class="form-control">
+                    </div>
+                    
+                    <div class="form-group">
+                      <label>Descripción</label>
+                      <textarea name="description" rows="3" class="form-control">{{ p.description or '' }}</textarea>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </form>
+              <div class="modal-footer d-flex w-100 justify-content-between">
+                
+                <form action="/admin/products/delete/{{ p.id }}" method="post" onsubmit="return confirm('¿Eliminar {{ p.name }}?');">
+                  <button type="submit" class="btn btn-danger">
+                    <i class="fas fa-trash mr-1"></i> Eliminar
+                  </button>
+                </form>
+                <div>
+                  <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancelar</button>
+                  <button class="btn btn-primary" type="submit" form="formUpdate{{ p.id }}">Guardar cambios</button>
+                </div>
+              </div>
+            
+
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- Modal crear producto -->
+<div class="modal fade" id="modalCreateProduct" tabindex="-1" role="dialog" aria-labelledby="modalCreateProductLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalCreateProductLabel">Nuevo producto</h5>
+        <button class="close" type="button" data-dismiss="modal" aria-label="Cerrar">
+          <span aria-hidden="true">×</span>
+        </button>
+      </div>
+
+      <form action="/admin/products/create" method="post" enctype="multipart/form-data">
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-md-5 text-center">
+              <img src="/static/public/assets/img/portfolio/cabin.png" class="img-fluid mb-3" alt="preview">
+              <div class="form-group">
+                <label>Imagen (opcional)</label>
+                <input type="file" name="image" accept="image/*" class="form-control-file">
+              </div>
+            </div>
+            <div class="col-md-7">
+              <div class="form-group">
+                <label>Nombre *</label>
+                <input type="text" name="name" class="form-control" required>
+              </div>
+              <div class="form-group">
+                <label>Precio *</label>
+                <input type="number" step="0.01" name="price" class="form-control" required>
+              </div>
+              <div class="form-group">
+                <label>Stock</label>
+                <input type="number" name="stock" value="0" min="0" class="form-control">
+              </div>
+              <div class="form-group">
+                <label>Categoría</label>
+                <input type="text" name="category" class="form-control">
+              </div>
+              <div class="form-group">
+                <label>Descripción</label>
+                <textarea name="description" rows="3" class="form-control"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancelar</button>
+          <button class="btn btn-primary" type="submit">Crear</button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</div>
+
+{% endblock %}

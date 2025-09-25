@@ -1,0 +1,70 @@
+{% extends "public/layout.html" %}
+{% block title %}Pago del pedido {{ order['ref'] }}{% endblock %}
+{% block content %}
+<section class="page-section" id="pay">
+  <div class="container">
+    <h2 class="page-section-heading text-center text-uppercase text-secondary mb-4">
+      Pago del pedido <span class="text-primary">{{ order['ref'] }}</span>
+    </h2>
+    <div class="row justify-content-center">
+      <div class="col-lg-10">
+        <div class="card shadow-sm mb-4">
+          <div class="card-body">
+            <p class="mb-1"><strong>Producto:</strong> {{ order['product_name'] }}</p>
+            <p class="mb-1"><strong>Cantidad:</strong> {{ order['qty'] }}</p>
+            <p class="mb-3"><strong>Total del pedido:</strong> {{ '%.2f'|format(order['total_amount']) }} USD</p>
+            <p class="mb-0"><strong>Vendedor:</strong> {{ order['vendor_name'] }}</p>
+            {% if order['vendor_email'] %}<p class="mb-0"><strong>Email del vendedor:</strong> {{ order['vendor_email'] }}</p>{% endif %}
+            {% if order['vendor_phone'] %}<p class="mb-0"><strong>Teléfono del vendedor:</strong> {{ order['vendor_phone'] }}</p>{% endif %}
+          </div>
+        </div>
+
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h5 class="mb-3">Notificar pago enviado (Zelle)</h5>
+            <form method="post" action="/pago/{{ order['ref'] }}/notificar">
+              <div class="row">
+                <div class="col-md-4 mb-3">
+                  <label class="form-label">Monto enviado (USD)</label>
+                  <input type="number" step="0.01" min="0.01" name="amount" class="form-control" required>
+                </div>
+                <div class="col-md-4 mb-3">
+                  <label class="form-label">Método</label>
+                  <input name="method" class="form-control" value="ZELLE" readonly>
+                </div>
+                <div class="col-md-4 mb-3">
+                  <label class="form-label">Pago total</label>
+                  <select name="is_full" class="form-control">
+                    <option value="1">Sí</option>
+                    <option value="0" selected>No (parcial)</option>
+                  </select>
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Referencia / Nota (opcional)</label>
+                <input name="reference" class="form-control" placeholder="Ej: nombre del remitente, email Zelle, comentario">
+              </div>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Tu email (opcional)</label>
+                  <input name="buyer_email" type="email" class="form-control">
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Tu teléfono (opcional)</label>
+                  <input name="buyer_phone" class="form-control">
+                </div>
+              </div>
+              <button class="btn btn-primary">Enviar notificación</button>
+              <a class="btn btn-outline-secondary" href="/">Volver al inicio</a>
+            </form>
+            <div class="mt-3 small text-muted">
+              El vendedor será notificado por email y SMS. Luego verificará el abono en su banco y actualizará tu pedido.
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

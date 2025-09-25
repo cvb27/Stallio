@@ -1,0 +1,15 @@
+
+{% extends "base.html" %}
+{% block content %}
+  {% if branding.settings.hero_image_url %}
+    <div style="margin:16px 0">
+      <img src="{{ branding.settings.hero_image_url }}" style="width:100%;max-height:360px;object-fit:cover;border-radius:12px">
+    </div>
+  {% endif %}
+
+  {% if branding.settings.tagline %}
+    <p style="font-size:1.1rem;margin:8px 16px;color:#374151">{{ branding.settings.tagline }}</p>
+  {% endif %}
+
+  <!-- aquí va tu grid de productos/ofertas -->
+{% endblock %}
