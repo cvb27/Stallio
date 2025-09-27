@@ -1,0 +1,10 @@
+{% extends "admin/layout.html" %}
+{% block content %}
+<div class="container" style="max-width:560px; padding-top:96px;">
+  <h2 class="mb-3">Enlace no válido</h2>
+  <div class="alert alert-warning">
+    El enlace para restablecer la contraseña es inválido o ha expirado.
+  </div>
+  <a class="btn btn-outline-primary" href="/auth/forgot">Solicitar un nuevo enlace</a>
+</div>
+{% endblock %}

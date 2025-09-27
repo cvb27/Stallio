@@ -73,5 +73,14 @@ class VendorBranding(SQLModel, table=True):
         sa_column=Column(JSON, nullable=False),
         default_factory=lambda: deepcopy(DEFAULT_BRANDING_SETTINGS),
     )
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class PasswordReset(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(index=True)
+    token_hash: str = Field(index=True)           # sha256 del token
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    expires_at: datetime
+    used_at: Optional[datetime] = None
+

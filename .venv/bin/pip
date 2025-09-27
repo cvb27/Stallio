@@ -1,4 +1,4 @@
-#!/home/cvb/Documents/App_pedidos/.venv/bin/python3
+#!/home/cvb/Documents/Stallio/.venv/bin/python
 # -*- coding: utf-8 -*-
 import re
 import sys

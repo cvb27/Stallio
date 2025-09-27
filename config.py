@@ -25,3 +25,7 @@ TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID", "")
 TWILIO_AUTH_TOKEN  = os.getenv("TWILIO_AUTH_TOKEN", "")
 TWILIO_FROM_NUMBER = os.getenv("TWILIO_FROM_NUMBER", "")  # formato +1XXX...
 SELLER_MOBILE      = os.getenv("SELLER_MOBILE", "")       # a dónde avisar
+
+BASE_URL = os.getenv("BASE_URL", "http://127.0.0.1:8000")  
+RESET_TOKEN_TTL_MIN = int(os.getenv("RESET_TOKEN_TTL_MIN", "60"))  # 60 min
+MAIL_FROM = os.getenv("MAIL_FROM", "no-reply@tu-dominio")
