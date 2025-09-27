@@ -141,14 +141,14 @@ async def logout(request: Request):
 
 # ========== 1) FORM OLVIDÉ MI CONTRASEÑA ==========
 
-@router.get("/admin/forgot", response_class=HTMLResponse)
+@router.get("/forgot", response_class=HTMLResponse)
 def forgot_form(request: Request):
     return templates.TemplateResponse("admin/forgot.html", {"request": request})
 
 
 # ========= 2) POST: ENVIAR EMAIL CON TOKEN =========
 
-@router.post("/admin/forgot", response_class=HTMLResponse)
+@router.post("/forgot", response_class=HTMLResponse)
 def forgot_submit(
     request: Request,
     email: str = Form(...)
@@ -173,7 +173,7 @@ def forgot_submit(
         session.add(pr)
         session.commit()
 
-        reset_url = f"{BASE_URL}/auth/reset?token={token}"
+        reset_url = f"{BASE_URL}/reset?token={token}"
 
         subject = "Restablece tu contraseña"
         body = (
@@ -189,10 +189,10 @@ def forgot_submit(
             pass
 
     # C) Redirigir con mensaje genérico
-    return RedirectResponse("/admin/forgot?sent=1", status_code=302)
+    return RedirectResponse("/forgot?sent=1", status_code=302)
 
 # ========= 3) FORM INGRESAR NUEVA CONTRASEÑA =========
-@router.get("/admin/reset", response_class=HTMLResponse)
+@router.get("/reset", response_class=HTMLResponse)
 def reset_form(request: Request, token: str, session: Session = Depends(get_session)):
     # Validar token
     token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
@@ -202,12 +202,12 @@ def reset_form(request: Request, token: str, session: Session = Depends(get_sess
 
     if (not pr) or pr.used_at or (pr.expires_at < datetime.utcnow()):
         # Token inválido/expirado/usado
-        return templates.TemplateResponse("/admin/reset_invalid.html", {"request": request})
+        return templates.TemplateResponse("/reset_invalid.html", {"request": request})
 
-    return templates.TemplateResponse("/admin/reset.html", {"request": request, "token": token})
+    return templates.TemplateResponse("/reset.html", {"request": request, "token": token})
 
 # ========= 4) POST: GUARDAR NUEVA CONTRASEÑA =========
-@router.post("/admin/reset", response_class=HTMLResponse)
+@router.post("/reset", response_class=HTMLResponse)
 def reset_submit(
     request: Request,
     token: str = Form(...),
@@ -216,11 +216,11 @@ def reset_submit(
     session: Session = Depends(get_session)
 ):
     if len(password) < 8:
-        return templates.TemplateResponse("admin/reset.html", {
+        return templates.TemplateResponse("/reset.html", {
             "request": request, "token": token, "err": "La contraseña debe tener al menos 8 caracteres."
         })
     if password != password2:
-        return templates.TemplateResponse("admin/reset.html", {
+        return templates.TemplateResponse("/reset.html", {
             "request": request, "token": token, "err": "Las contraseñas no coinciden."
         })
 
@@ -230,12 +230,12 @@ def reset_submit(
     ).first()
 
     if (not pr) or pr.used_at or (pr.expires_at < datetime.utcnow()):
-        return templates.TemplateResponse("/admin/reset_invalid.html", {"request": request})
+        return templates.TemplateResponse("/reset_invalid.html", {"request": request})
 
     # Cargar usuario y actualizar contraseña
     user = session.exec(select(User).where(User.id == pr.user_id)).first()
     if not user:
-        return templates.TemplateResponse("/admin/reset_invalid.html", {"request": request})
+        return templates.TemplateResponse("/reset_invalid.html", {"request": request})
 
     # Hash de contraseña (ajusta si ya tienes tu helper de hashing)
     user.password_hash = generate_password_hash(password)
