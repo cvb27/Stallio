@@ -42,6 +42,10 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # Sesiones (firma de cookies)
 app.add_middleware(SessionMiddleware, secret_key="9ooiBgd3HLbFa3yyXpHCYiZD8xHD3Qa7")
 
+@app.on_event("startup")
+def on_startup():
+    init_db()
+
 # End point vacio para el error que venia de Chrome devtools
 @app.get("/.well-known/appspecific/com.chrome.devtools.json")
 def chrome_devtools_probe():
