@@ -3,7 +3,7 @@ from typing import Generator
 from sqlmodel import SQLModel, create_engine, Session
 from sqlalchemy import create_engine
 from sqlalchemy.engine.url import make_url
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 DB_URL = os.getenv("DATABASE_URL", "sqlite:///./app.db")
 
@@ -26,8 +26,11 @@ class Settings(BaseSettings):
     # Para local usa SQLite por defecto; en Railway define DATABASE_URL
     DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./app.db")
 
-    class Config:
-        env_file = ".env"
+    # Pydantic v2: usa model_config (no la clase Config)
+    model_config = SettingsConfigDict(
+        env_file=".env",   # opcional en Railway, útil en local
+        extra="ignore"     # <--- ignora variables que no estén declaradas
+    )
 
 settings = Settings()
 
