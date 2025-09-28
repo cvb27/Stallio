@@ -5,6 +5,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.engine.url import make_url
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+
 DB_URL = os.getenv("DATABASE_URL", "sqlite:///./app.db")
 
 # Compatibilidad: postgres:// -> postgresql+psycopg2://

@@ -38,18 +38,18 @@ ws_manager = WSManager()
 
 
 def send_email(to: str, subject: str, html: str, text_alt: Optional[str] = None):
-    if not (SMTP_HOST and SMTP_USER and SMTP_PASS and SMTP_FROM and to):
+    if not (SMTP_HOST and SMTP_USER and SMTP_PASSWORD and EMAIL_FROM and to):
         print("[notify] Email DESACTIVADO o datos incompletos. Para:", to, subject)
         return False
     msg = EmailMessage()
-    msg["From"] = SMTP_FROM
+    msg["From"] = EMAIL_FROM
     msg["To"] = to
     msg["Subject"] = subject
     msg.set_content(text_alt or subject)
     msg.add_alternative(html, subtype="html")
     context = ssl.create_default_context()
     with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, context=context) as server:
-        server.login(SMTP_USER, SMTP_PASS)
+        server.login(SMTP_USER, SMTP_PASSWORD)
         server.send_message(msg)
     return True
 

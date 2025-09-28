@@ -58,14 +58,13 @@ def signup_post(
         slug = f"{base}-{i}"; i += 1
 
     # 3) Hash de contraseña
-    pwd_hash, salt = hash_password(password)
-
+    pwd_hash = hash_password(password)
+    
     # 4) Crea usuario
     u = User(
         email=email, 
         name=name.strip() or None, 
         password_hash=pwd_hash, 
-        salt=salt, 
         slug=slug
         )
 
@@ -81,7 +80,7 @@ def signup_post(
     request.session["user_slug"]  = u.slug 
 
     return RedirectResponse(
-        f"admin/{u.slug}/dashboard", 
+        f"/admin/{u.slug}/dashboard", 
         status_code=HTTP_303_SEE_OTHER
         )
 
@@ -131,7 +130,7 @@ async def login(
         )
     
     # 4) Verifica contraseña
-    if not verify_password(password, user.salt, user.password_hash):
+    if not verify_password(password, user.password_hash):
         return templates.TemplateResponse(
             "admin/auth.html",
             {"request": request, "error": "Credenciales inválidas"},
@@ -139,10 +138,11 @@ async def login(
         )
     
     # 5) Si esta todo bien, redirige por rol
-    role = getattr(user, "role", "vendor")
+    is_admin = getattr(user, "is_admin", False) or getattr(user, "role", "") == "admin"
+
 
     request.session.clear()
-    if role == "admin":
+    if is_admin:
         request.session["admin_email"] = user.email
         request.session["user_name"] = (user.name or "Administrador")
         return RedirectResponse("/admin/users", status_code=HTTP_303_SEE_OTHER)
@@ -155,7 +155,7 @@ async def login(
     request.session["user_slug"]  = user.slug 
 
     return RedirectResponse(
-        f"admin/{user.slug}/dashboard", 
+        f"/admin/{user.slug}/dashboard", 
         status_code=HTTP_303_SEE_OTHER
         )
 
@@ -257,15 +257,15 @@ def reset_submit(
     ).first()
 
     if (not pr) or pr.used_at or (pr.expires_at < datetime.utcnow()):
-        return templates.TemplateResponse("/reset_invalid.html", {"request": request})
+        return templates.TemplateResponse("/reset_invalid.html", {"request": request, "token": token})
 
     # Cargar usuario y actualizar contraseña
     user = session.exec(select(User).where(User.id == pr.user_id)).first()
     if not user:
-        return templates.TemplateResponse("/reset_invalid.html", {"request": request})
+        return templates.TemplateResponse("/reset.html", {"request": request, "token": token})
 
     # Hash de contraseña (ajusta si ya tienes tu helper de hashing)
-    user.password_hash = generate_password_hash(password)
+    user.password_hash = hash_password(password)
 
     # Marcar token como usado
     pr.used_at = datetime.utcnow()

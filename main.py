@@ -46,6 +46,10 @@ app.add_middleware(SessionMiddleware, secret_key="9ooiBgd3HLbFa3yyXpHCYiZD8xHD3Q
 def on_startup():
     init_db()
 
+@app.on_event("shutdown")
+async def _shutdown():
+    pass
+
 # End point vacio para el error que venia de Chrome devtools
 @app.get("/.well-known/appspecific/com.chrome.devtools.json")
 def chrome_devtools_probe():
