@@ -40,6 +40,7 @@ def signup_post(
     # ✅ normaliza email
     email = str(email).strip().lower()
 
+    # 1) Validación de duplicado
     exists = session.exec(select(User).where(User.email == email)).first()
     if exists:
         return templates.TemplateResponse("admin/signup.html", {
@@ -49,24 +50,40 @@ def signup_post(
                 "name": name,
                 }, status_code=400)
 
+    # 2) Genera slug único
     base = _slugify(name or email.split("@")[0])
     slug = base
     i = 2
     while session.exec(select(User).where(User.slug == slug)).first():
         slug = f"{base}-{i}"; i += 1
 
+    # 3) Hash de contraseña
     pwd_hash, salt = hash_password(password)
-    u = User(email=email, name=name.strip() or None, password_hash=pwd_hash, salt=salt, slug=slug)
+
+    # 4) Crea usuario
+    u = User(
+        email=email, 
+        name=name.strip() or None, 
+        password_hash=pwd_hash, 
+        salt=salt, 
+        slug=slug
+        )
+
     session.add(u); 
     session.commit(); 
     session.refresh(u)
 
-    # autologin vendedor a su propio panel
+    # 5) Autologin vendor
+    request.session.clear()  # limpia cualquier estado previo
     request.session["user_email"] = u.email
     request.session["user_id"] = u.id          # ← CLAVE para filtrar
     request.session["user_name"]  = (u.name or u.email) # Guarda el nombre de usuario para el layout.
     request.session["user_slug"]  = u.slug 
-    return RedirectResponse(f"admin/{u.slug}/dashboard", status_code=HTTP_303_SEE_OTHER)
+
+    return RedirectResponse(
+        f"admin/{u.slug}/dashboard", 
+        status_code=HTTP_303_SEE_OTHER
+        )
 
 
 # ========== LOGIN ==========
@@ -88,40 +105,47 @@ async def login(
      # Normaliza email
     email = str(email).strip().lower()
 
-    # Login para admin
+    # 1) Admin por credenciales fijas
     if email == ADMIN_EMAIL and password == ADMIN_PASSWORD:
          # Si login correcto, redirige al master users.
         request.session.clear()   # ← limpia cualquier rastro de vendor
         request.session["admin_email"] = email          # ← sesión creada
         request.session["user_name"] = "Administrador"  # Muestra el nombre de user en el layout.
-        return RedirectResponse("/admin/users", status_code=302)
+        return RedirectResponse("/admin/users", status_code=HTTP_303_SEE_OTHER)
     
-    # Si no, va al db a buscar usuarios vendors
+    # 2) Busca usuario vendor/admin en BD
     user = session.exec(select(User).where(User.email == email)).first()
     if not user:
         return templates.TemplateResponse(
             "admin/auth.html",
-            {"request": request, "error": "Credenciales inválidas"}
-        )
-    # Luego busca si la cuenta esta activa.
-    if hasattr(user, "is_active") and not user.is_active:
-        return templates.TemplateResponse(
-            "admin/auth.html",
-            {"request": request, "error": "Tu cuenta está desactivada"}
+            {"request": request, "error": "Credenciales inválidas"},
+            status_code=401,
         )
     
-    # Luego verifica hash con sal
+    # 3) Luego busca si la cuenta esta activa.
+    if getattr(user, "is_active", True) is False:
+        return templates.TemplateResponse(
+            "admin/auth.html",
+            {"request": request, "error": "Tu cuenta está desactivada"},
+            status_code=403,
+        )
+    
+    # 4) Verifica contraseña
     if not verify_password(password, user.salt, user.password_hash):
         return templates.TemplateResponse(
             "admin/auth.html",
-            {"request": request, "error": "Credenciales inválidas"}
+            {"request": request, "error": "Credenciales inválidas"},
+            status_code=401,
         )
     
-    # Si esta todo bien, redirige por rol
-    if getattr(user, "role", "vendor") == "admin":
-        request.session["admin_email"] = user.email
-        return RedirectResponse("/users", status_code=302)
+    # 5) Si esta todo bien, redirige por rol
+    role = getattr(user, "role", "vendor")
 
+    request.session.clear()
+    if role == "admin":
+        request.session["admin_email"] = user.email
+        request.session["user_name"] = (user.name or "Administrador")
+        return RedirectResponse("/admin/users", status_code=HTTP_303_SEE_OTHER)
 
    # Vendedor
     request.session.clear()  # ← limpia cualquier rastro de admin
@@ -129,8 +153,11 @@ async def login(
     request.session["user_id"] = user.id        # ← CLAVE para la separacion de los perfiles de vendedor.
     request.session["user_name"]  = (user.name or user.email)  # Guarda el nombre
     request.session["user_slug"]  = user.slug 
-    return RedirectResponse(f"admin/{user.slug}/dashboard", status_code=HTTP_303_SEE_OTHER)
-    # return RedirectResponse("/dashboard", status_code=302)
+
+    return RedirectResponse(
+        f"admin/{user.slug}/dashboard", 
+        status_code=HTTP_303_SEE_OTHER
+        )
 
 
 # ========== LOGOUT ==========

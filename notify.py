@@ -5,7 +5,7 @@ import smtplib, ssl
 from email.message import EmailMessage
 from typing import Optional
 from config import (
-    SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM,
+    SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, SMTP_TLS, EMAIL_FROM,
     TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN
 )
 
