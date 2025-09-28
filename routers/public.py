@@ -15,6 +15,11 @@ import secrets, asyncio, json
 router = APIRouter(prefix="", tags=["Public"])
 templates = Jinja2Templates(directory="templates")
 
+# ---------- HOME MASTER ----------
+@router.get("/", include_in_schema=False)
+def root_redirect():
+     return RedirectResponse("/login", status_code=302)
+
 
 # ---------- HOME PÚBLICO ----------
 @router.get("/", name="public_home")

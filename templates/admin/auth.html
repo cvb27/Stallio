@@ -8,20 +8,49 @@
 
     <!-- Custom styles for this template-->
     <link href="static/admin/css/sb-admin-2.min.css" rel="stylesheet">
+    <style>
+        .brand-logo {
+            object-fit: contain;
+            border-radius: 16px;          /* bordes suaves */
+            background: #fff;              /* base clara para SVG/PNG */
+            box-shadow: 0 6px 20px rgba(0,0,0,.08);
+            padding: 10px;
+        }
+        .brand-name {
+            font-weight: 700;
+            letter-spacing: .3px;
+        }
+    </style>
 
 </head>
 
+
 <body class="bg-gradient-primary">
 
+    
     <div class="container">
 
         <!-- Outer Row -->
         <div class="row justify-content-center">
-
             <div class="col-xl-10 col-lg-12 col-md-9">
 
+                
                 <div class="card o-hidden border-0 shadow-lg my-5">
+                    <!-- Brand header (logo + nombre) -->
+                
                     <div class="card-body p-0">
+                        <div class="text-center mb-4">
+                    <img
+                        src="/static/admin/img/undraw_rocket.svg"
+                        alt="Stallio"
+                        class="brand-logo mb-3"
+                        width="88"
+                        height="88"
+                        loading="lazy"
+                    />
+                    <h1 class="h4 text-gray-900 brand-name mb-1">Stallio.app</h1>
+                    <p class="text-muted small mb-0">Gestión de ventas, simple y rápido</p>
+                </div>
                         <!-- Nested Row within Card Body -->
                         <div class="row">
                             <div class="col-lg-6 d-none d-lg-block bg-login-image"></div>

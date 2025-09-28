@@ -1,7 +1,7 @@
 import asyncio
 from typing import Set
 from starlette.websockets import WebSocket
-import smtplib, ssl
+import smtplib, ssl, asyncio
 from email.message import EmailMessage
 from typing import Optional
 from config import (
@@ -10,6 +10,21 @@ from config import (
 )
 
 # gestor mínimo de conexiones WS
+
+_tasks: list[asyncio.Task] = []
+
+def start_bg_task(coro):
+    t = asyncio.create_task(coro)
+    _tasks.append(t)
+    return t
+
+async def close():
+    for t in _tasks:
+        t.cancel()
+    for t in _tasks:
+        with contextlib.suppress(asyncio.CancelledError):
+            await t
+    _tasks.clear()
 
 class WSManager:
     def __init__(self) -> None:
@@ -33,9 +48,6 @@ class WSManager:
             self.disconnect(ws)
 
 ws_manager = WSManager()
-
-
-
 
 def send_email(to: str, subject: str, html: str, text_alt: Optional[str] = None):
     if not (SMTP_HOST and SMTP_USER and SMTP_PASSWORD and EMAIL_FROM and to):
