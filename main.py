@@ -8,8 +8,9 @@ from routers import dashboard, auth, public, products, support, users, master, v
 from config import SESSION_SECRET
 from contextlib import asynccontextmanager
 from notify import ws_manager
-from db import init_db
-from sqlmodel import SQLModel
+from db import init_db, engine
+from sqlmodel import SQLModel, inspect
+from pathlib import Path
 import os
 from pathlib import Path
 
@@ -75,6 +76,19 @@ app.include_router(orders.router)
 @app.get("/ping")
 def ping():
     return {"ok": True}
+
+@app.get("/debug/db")
+def debug_db():
+    url = str(engine.url)
+    abs_path = None
+    if engine.url.database:
+        abs_path = str(Path(engine.url.database).resolve())
+    insp = inspect(engine)
+    return {
+        "engine_url": url,
+        "db_absolute_path": abs_path,
+        "tables": insp.get_table_names(),
+    }
 
 
 if __name__ == "__main__":
