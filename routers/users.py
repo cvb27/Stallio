@@ -5,6 +5,7 @@ from sqlmodel import Session, select, delete
 from db import get_session
 from models import User, Product, PaymentReport, DispatchedOrder
 from starlette.status import HTTP_302_FOUND
+from sqlalchemy import or_, func
 
 router = APIRouter(prefix="/admin/users", tags=["Admin Users"])
 templates = Jinja2Templates(directory="templates")
@@ -17,7 +18,36 @@ def _require_admin(request: Request):
         raise HTTPException(status_code=401, detail="No autenticado como admin")
     
 @router.get("/", response_class=HTMLResponse)
-def admin_users_page(request: Request, session: Session = Depends(get_session), q: str | None = None):
+def admin_users_page(
+    request: Request, 
+    session: Session = Depends(get_session), 
+    q: str | None = None
+    ):
+
+    if "admin_email" not in request.session:
+        return RedirectResponse("/login", status_code=302)
+
+    stmt = select(User).order_by(User.created_at.desc())
+    if q:
+        like = f"%{q.strip().lower()}%"
+        stmt = (
+            select(User)
+            .where(or_(func.lower(User.email).like(like),
+                       func.lower(User.name).like(like)))
+            .order_by(User.created_at.desc())
+        )
+
+    users = session.exec(stmt).all()
+
+    return templates.TemplateResponse(
+        "master/users.html",
+        {
+            "request": request,
+            "users": users,
+            "q": q or "",
+        },
+    )
+""""
     _require_admin(request)
     stmt = select(User).order_by(User.created_at.desc())
     if q:
@@ -34,6 +64,7 @@ def admin_users_page(request: Request, session: Session = Depends(get_session), 
         "users": users,
         "q": q or ""
     })
+"""
 
 @router.post("/{user_id}/deactivate")
 def admin_deactivate_user(user_id: int, request: Request, session: Session = Depends(get_session)):
