@@ -1,3 +1,12 @@
+import os
+from dotenv import load_dotenv, find_dotenv
+
+# Carga base (opcional) y luego el específico por entorno
+load_dotenv(find_dotenv(".env", usecwd=True), override=False)
+env = os.getenv("ENV", "local").lower()
+load_dotenv(find_dotenv(".env.local" if env == "local" else ".env.prod", usecwd=True), override=True)
+
+
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
@@ -5,13 +14,10 @@ from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.staticfiles import StaticFiles
 from routers import dashboard, auth, public, products, support, users, master, vendor, share, orders
-from config import SESSION_SECRET
 from contextlib import asynccontextmanager
 from notify import ws_manager
 from db import init_db, engine
 from sqlmodel import SQLModel, inspect
-from pathlib import Path
-import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -23,6 +29,12 @@ VENDOR_LOGOS_DIR = UPLOADS_DIR / "vendor_logos"
 STATIC_DIR.mkdir(parents=True, exist_ok=True)
 UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 VENDOR_LOGOS_DIR.mkdir(parents=True, exist_ok=True)
+
+SECRET_KEY = os.getenv("SECRET_KEY")  # ← lee del .env / entorno
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY no está definido(revisa tus .env / variables de entorno)")
+
+
 
 # Comandos varios
 # source .venv/bin/activate
@@ -37,15 +49,17 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=SECRET_KEY,
+    session_cookie="stallio_session",
+    max_age=60*60*24*7,  # 7 días
+    same_site="lax",
+    https_only=False,    # True si sirves por HTTPS
+)
+
 # Sirve archivos estaticos (css, imagenes, etc.)
 app.mount("/static", StaticFiles(directory="static"), name="static")
-
-# Sesiones (firma de cookies)
-app.add_middleware(SessionMiddleware, secret_key="9ooiBgd3HLbFa3yyXpHCYiZD8xHD3Qa7")
-
-@app.on_event("startup")
-def on_startup():
-    init_db()
 
 @app.on_event("shutdown")
 async def _shutdown():

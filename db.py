@@ -4,45 +4,36 @@ from sqlmodel import SQLModel, create_engine, Session
 from sqlalchemy import create_engine
 from sqlalchemy.engine.url import make_url
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pathlib import Path
 
 
-DB_URL = os.getenv("DATABASE_URL", "sqlite:///./app.db")
+# Lee de entorno (ya cargado por main.py)
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./app.db")
 
-# Compatibilidad: postgres:// -> postgresql+psycopg2://
-if DB_URL.startswith("postgres://"):
-    DB_URL = DB_URL.replace("postgres://", "postgresql+psycopg2://", 1)
+# Compatibilidad: postgres:// -> postgresql+psycopg2:// (por si algún día migras)
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg2://", 1)
+    
+# 2) Para SQLite: asegúrate de que existe el directorio del archivo
+connect_args = {}
+url = make_url(DATABASE_URL)
+if url.drivername.startswith("sqlite"):
+    connect_args = {"check_same_thread": False}
+    if url.database:  # ruta del archivo
+        db_path = Path(url.database)
+        db_path.parent.mkdir(parents=True, exist_ok=True)
 
-# SQLite requiere flag especial para threads
-engine_kwargs = dict(pool_pre_ping=True, future=True)
-if DB_URL.startswith("sqlite"):
-    engine_kwargs["connect_args"] = {"check_same_thread": False}
-
-engine = create_engine("sqlite:///./app.db", echo=False)
-
-def get_session():
-    with Session(engine) as session:
-        yield session
-
-class Settings(BaseSettings):
-    # Para local usa SQLite por defecto; en Railway define DATABASE_URL
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./app.db")
-
-    # Pydantic v2: usa model_config (no la clase Config)
-    model_config = SettingsConfigDict(
-        env_file=".env",   # opcional en Railway, útil en local
-        extra="ignore"     # <--- ignora variables que no estén declaradas
-    )
-
-settings = Settings()
-
-# Conexión: SQLite requiere un connect_args especial
-connect_args = {"check_same_thread": False} if settings.DATABASE_URL.startswith("sqlite") else {}
+# 3) Crea el engine UNA sola vez
 engine = create_engine(
-    settings.DATABASE_URL,
+    DATABASE_URL,
     echo=False,
     pool_pre_ping=True,
     connect_args=connect_args,
 )
+
+def get_session() -> Generator[Session, None, None]:
+    with Session(engine) as session:
+        yield session
 
 def init_db():
     """

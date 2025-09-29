@@ -2,13 +2,11 @@ import os
 
 ENV = os.getenv("ENV", "local")
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./app.db")
 BASE_URL = os.getenv("BASE_URL", "http://127.0.0.1:8000")
 
 # config.py - mínimo para probar
-SESSION_SECRET = "dev-secret"
-ADMIN_EMAIL = "admin@local"
-ADMIN_PASSWORD = "admin123"
+ADMIN_EMAIL = ("ADMIN_EMAIL", "admin@local")
+ADMIN_PASSWORD = ("ADMIN_PASSWORD", "admin123")
 
 # Información que verá el cliente para pagar (muestra lo que uses tú)
 PAYMENT_INFO = {
