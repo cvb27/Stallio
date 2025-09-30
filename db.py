@@ -20,9 +20,8 @@ url = make_url(DATABASE_URL)
 if url.drivername.startswith("sqlite"):
     connect_args = {"check_same_thread": False}
     if url.database:  # ruta del archivo
-        db_path = Path(url.database)
-        db_path.parent.mkdir(parents=True, exist_ok=True)
-
+        Path(url.database).parent.mkdir(parents=True, exist_ok=True)
+        
 # 3) Crea el engine UNA sola vez
 engine = create_engine(
     DATABASE_URL,

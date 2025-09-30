@@ -20,21 +20,34 @@ from db import init_db, engine
 from sqlmodel import SQLModel, inspect
 from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent
-STATIC_DIR = BASE_DIR / "static"
-UPLOADS_DIR = BASE_DIR / "uploads"
-VENDOR_LOGOS_DIR = UPLOADS_DIR / "vendor_logos"
+app = FastAPI()
 
+# --- Static / Uploads ---
+BASE_DIR = Path(__file__).resolve().parent
+
+# Por defecto en local usa ./uploads; en prod usaremos env UPLOADS_DIR
+DEFAULT_LOCAL_UPLOADS = str((BASE_DIR / "uploads").resolve())
+
+STATIC_DIR = BASE_DIR / "static"
+# UPLOADS_DIR = BASE_DIR / "uploads"
+
+STATIC_DIR.mkdir(parents=True, exist_ok=True)
+# VENDOR_LOGOS_DIR = UPLOADS_DIR / "vendor_logos"
+
+# Carpeta de uploads (en PROD será el volumen montado)
+UPLOADS_DIR = os.getenv("UPLOADS_DIR", DEFAULT_LOCAL_UPLOADS)
+Path(UPLOADS_DIR).mkdir(parents=True, exist_ok=True)
+
+"""
 # ⚠️ Crear carpetas ANTES de montar
 STATIC_DIR.mkdir(parents=True, exist_ok=True)
 UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 VENDOR_LOGOS_DIR.mkdir(parents=True, exist_ok=True)
+"""
 
 SECRET_KEY = os.getenv("SECRET_KEY")  # ← lee del .env / entorno
 if not SECRET_KEY:
     raise RuntimeError("SECRET_KEY no está definido(revisa tus .env / variables de entorno)")
-
-
 
 # Comandos varios
 # source .venv/bin/activate
@@ -47,8 +60,13 @@ async def lifespan(app: FastAPI):
     yield       # no hacemos nada al shutdown (ya migraste a WebSocket)
 
 
-app = FastAPI(lifespan=lifespan)
+# app = FastAPI(lifespan=lifespan)
+app.router.lifespan_context = lifespan
 
+app.add_middleware(
+    SessionMiddleware, 
+    secret_key=os.getenv("SECRET_KEY", "dev-fallback-change-me"))
+"""
 app.add_middleware(
     SessionMiddleware,
     secret_key=SECRET_KEY,
@@ -57,9 +75,12 @@ app.add_middleware(
     same_site="lax",
     https_only=False,    # True si sirves por HTTPS
 )
+"""
+# Sirve archivos estaticos (css, imagenes, etc.) y /uploads
+# app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
 
-# Sirve archivos estaticos (css, imagenes, etc.)
-app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.on_event("shutdown")
 async def _shutdown():
@@ -69,6 +90,26 @@ async def _shutdown():
 @app.get("/.well-known/appspecific/com.chrome.devtools.json")
 def chrome_devtools_probe():
     return Response(status_code=204)
+
+# Endpoint de prueba de persistencia del volumen
+@app.get("/debug/persist")
+def debug_persist():
+    p = Path(UPLOADS_DIR) / "marker.txt"
+    if not p.exists():
+        p.write_text("hello")
+        status = "created"
+    else:
+        status = "exists"
+    return {"uploads_dir": UPLOADS_DIR, "marker": str(p), "status": status}
+
+# /debug/db para confirmar la DB
+@app.get("/debug/db")
+def debug_db():
+    url = str(engine.url)
+    abs_path = str(engine.url.database) if engine.url.database else None
+    insp = inspect(engine)
+    return {"engine_url": url, "db_absolute_path": abs_path, "tables": insp.get_table_names()}
+
 
 
 app.include_router(dashboard.router)

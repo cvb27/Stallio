@@ -1,15 +1,15 @@
-from fastapi import APIRouter, Request, Depends, HTTPException, File, UploadFile
+from fastapi import APIRouter, Request, Depends, HTTPException, File, UploadFile, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select
 from db import get_session
 from models import User, Product, PaymentReport, VendorBranding, DEFAULT_BRANDING_SETTINGS
 from typing import Optional
-from fastapi import Form
 from copy import deepcopy
 from datetime import datetime
 from routers.store_helpers import resolve_store, get_branding_by_owner, ensure_settings_dict, norm_instagram, norm_whatsapp,build_theme
-import re, unicodedata, os, time
+from storage_local import save_vendor_bytes
+import re, unicodedata
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -195,21 +195,27 @@ async def brand_save(
                 user.slug = new_slug
             branding.slug = new_slug
 
+    # 5) LOGO (persistente en volumen /uploads)
     if logo and getattr(logo, "filename", ""):
-        if logo.content_type not in ("image/png", "image/jpeg", "image/webp"):
-            # si quieres, puedes ignorar o redirigir con error
-            pass
-        else:
-            os.makedirs("static/uploads", exist_ok=True)
-            _, ext = os.path.splitext(logo.filename)
-            ext = ext.lower() if ext.lower() in (".png", ".jpg", ".jpeg", ".webp") else ".png"
-            filename = f"logo_{owner_id}_{int(time.time())}{ext}"
-            dest_path = os.path.join("static", "uploads", filename)
-            content = await logo.read()
-            with open(dest_path, "wb") as f:
-                f.write(content)
-            # URL pública
-            branding.settings["logo_url"] = f"/static/uploads/{filename}"
+        # Validaciones mínimas
+        ALLOWED = {"image/png", "image/jpeg", "image/webp", "image/svg+xml", "image/gif"}
+        if logo.content_type not in ALLOWED:
+            return RedirectResponse("/vendor/brand?err=Formato+no+permitido", status_code=302)
+
+        content = await logo.read()
+        if len(content) > 3 * 1024 * 1024:  # 3MB
+            return RedirectResponse("/vendor/brand?err=Archivo+muy+grande+(3MB)", status_code=302)
+
+        # slug de carpeta para el vendor
+        vendor = session.exec(select(User).where(User.id == owner_id)).first()
+        vendor_slug = vendor.slug if vendor and vendor.slug else branding.slug
+
+        # 🔸 guarda en /uploads/vendors/<slug>/<uuid>.ext y devuelve la URL pública
+        public_url = save_vendor_bytes(vendor_slug, content, logo.filename)
+
+        # guarda la URL en settings (o en columna propia si prefieres)
+        branding.settings["logo_url"] = public_url
+
 
     session.commit()
     session.refresh(branding)
