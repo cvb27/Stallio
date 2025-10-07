@@ -8,9 +8,10 @@ from db import get_session
 from notify import ws_manager
 from sms import send_sms
 from config import PAYMENT_INFO, SELLER_MOBILE
-from routers.store_helpers import resolve_store
+from routers.store_helpers import resolve_store, build_theme
 import secrets, asyncio, json
 
+DEFAULT_IMAGE_URL = "/static/img/product_placeholder.png"
 
 router = APIRouter(prefix="", tags=["Public"])
 templates = Jinja2Templates(directory="templates")
@@ -22,28 +23,57 @@ def root_redirect():
 
 
 # ---------- HOME PÚBLICO ----------
-@router.get("/", name="public_home")
+@router.get("/public", name="public_home", response_class=HTMLResponse)
 async def public_home(request: Request, session: Session = Depends(get_session)):
-    products = session.exec(select(Product).order_by(Product.id.desc())).all()
-    return templates.TemplateResponse("public/home.html", {"request": request, "products": products})
+    products = session.exec(
+        select(Product).order_by(Product.id.desc())
+    ).all()
+    return templates.TemplateResponse("public/home.html", {
+        "request": request,
+        "products": products
+    })
+    
+
+@router.get("/u/{slug}", response_class=HTMLResponse)
+def public_store(slug: str, request: Request, session: Session = Depends(get_session)):
+    user, branding = resolve_store(session, slug)
+    products = session.exec(
+        select(Product)
+        .where(Product.owner_id == user.id)
+        .order_by(Product.id.desc())).all()
+    theme = build_theme(branding)
+    return templates.TemplateResponse("public/home.html", {
+        "request": request,
+        "vendor": user,
+        "branding": branding,
+        "theme": theme,
+        "products": products,
+    })
 
 # JSON para la grilla pública del vendor
-
-DEFAULT_IMAGE_URL = "/static/img/product_placeholder.png"
 
 @router.get("/u/{slug}/products.json")
 def public_products_json(slug: str, session: Session = Depends(get_session)):
     user, branding = resolve_store(session, slug)
-    rows = session.exec(
-        select(Product).where(Product.owner_id == user.id)).order_by(Product.id.desc()
+
+    products  = session.exec(
+        select(Product)
+        .where(Product.owner_id == user.id)
+        .order_by(Product.id.desc())
     ).all()
-    return [{
-        "id": p.id,
-        "name": p.name,
-        "price": float(p.price or 0.0),
-        "description": p.description or "",
-        "image_url": p.image_url or DEFAULT_IMAGE_URL,
-    } for p in rows]
+
+    data = []
+    for p in products:
+        data.append({
+            "id": p.id,
+            "name": p.name,
+            "price": float(p.price or 0.0),
+            "description": p.description or "",
+            "image_url": getattr(p, "image_url", None) or DEFAULT_IMAGE_URL,
+            "slug": getattr(p, "slug", None),
+            "available": getattr(p, "available", True), 
+        })
+    return JSONResponse({"ok": True, "count": len(data), "products": data})    
 
 
 @router.get("/public/payment-info")

@@ -13,52 +13,38 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.staticfiles import StaticFiles
-from routers import dashboard, auth, public, products, support, users, master, vendor, share, orders
+from routers import dashboard, auth, public, products, support, users, master, vendor, share, orders, debug
 from contextlib import asynccontextmanager
 from notify import ws_manager
 from db import init_db, engine
 from sqlmodel import SQLModel, inspect
 from pathlib import Path
+from storage_local import UPLOADS_DIR
 
 app = FastAPI()
-
-# --- Static / Uploads ---
-BASE_DIR = Path(__file__).resolve().parent
-
-# Por defecto en local usa ./uploads; en prod usaremos env UPLOADS_DIR
-DEFAULT_LOCAL_UPLOADS = str((BASE_DIR / "uploads").resolve())
-
-STATIC_DIR = BASE_DIR / "static"
-# UPLOADS_DIR = BASE_DIR / "uploads"
-
-STATIC_DIR.mkdir(parents=True, exist_ok=True)
-# VENDOR_LOGOS_DIR = UPLOADS_DIR / "vendor_logos"
-
-# Carpeta de uploads (en PROD será el volumen montado)
-UPLOADS_DIR = os.getenv("UPLOADS_DIR", DEFAULT_LOCAL_UPLOADS)
-Path(UPLOADS_DIR).mkdir(parents=True, exist_ok=True)
-
-"""
-# ⚠️ Crear carpetas ANTES de montar
-STATIC_DIR.mkdir(parents=True, exist_ok=True)
-UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
-VENDOR_LOGOS_DIR.mkdir(parents=True, exist_ok=True)
-"""
-
-SECRET_KEY = os.getenv("SECRET_KEY")  # ← lee del .env / entorno
-if not SECRET_KEY:
-    raise RuntimeError("SECRET_KEY no está definido(revisa tus .env / variables de entorno)")
 
 # Comandos varios
 # source .venv/bin/activate
 # rm -rf __pycache__
 # -uvicorn main:app --reload
 
+
+# monta estáticos de tu plantilla admin/pública
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# monta el directorio PERSISTENTE de uploads (volumen en prod)
+app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
+
+SECRET_KEY = os.getenv("SECRET_KEY")  # ← lee del .env / entorno
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY no está definido(revisa tus .env / variables de entorno)")
+
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()   # crea tablas una sola vez al boot
     yield       # no hacemos nada al shutdown (ya migraste a WebSocket)
-
 
 # app = FastAPI(lifespan=lifespan)
 app.router.lifespan_context = lifespan
@@ -66,20 +52,7 @@ app.router.lifespan_context = lifespan
 app.add_middleware(
     SessionMiddleware, 
     secret_key=os.getenv("SECRET_KEY", "dev-fallback-change-me"))
-"""
-app.add_middleware(
-    SessionMiddleware,
-    secret_key=SECRET_KEY,
-    session_cookie="stallio_session",
-    max_age=60*60*24*7,  # 7 días
-    same_site="lax",
-    https_only=False,    # True si sirves por HTTPS
-)
-"""
-# Sirve archivos estaticos (css, imagenes, etc.) y /uploads
-# app.mount("/static", StaticFiles(directory="static"), name="static")
-app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
-app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
+
 
 
 @app.on_event("shutdown")
@@ -120,10 +93,9 @@ app.include_router(products.router)
 app.include_router(support.router)
 app.include_router(users.router)
 app.include_router(master.router)
-
 app.include_router(share.router)
 app.include_router(orders.router)
-
+app.include_router(debug.router)
 
 
 

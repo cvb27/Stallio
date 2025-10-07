@@ -18,7 +18,9 @@ def resolve_store(session, slug: str):
     Fuente de verdad: busca primero por VendorBranding.slug; si no, por User.slug.
     Devuelve (user, branding) o 404.
     """
-    branding = session.exec(select(VendorBranding).where(VendorBranding.slug == slug)).first()
+    branding = session.exec(
+        select(VendorBranding).where(VendorBranding.slug == slug)
+    ).first()
     if branding:
         user = session.exec(select(User).where(User.id == branding.owner_id)).first()
         if not user:
@@ -52,17 +54,43 @@ def norm_instagram(s: str) -> str:
     return s
 
 def build_theme(branding):
-    """Produce un dict simple para la vista."""
+    """
+    Devuelve un dict con los datos de marca para las vistas públicas.
+    Normaliza logo_url para que, si viene de /static/uploads, apunte a /uploads.
+    """
+
     s = ensure_settings_dict(getattr(branding, "settings", None))
+
     primary = (s.get("primary_color") or "#0f172a").strip()
     accent  = (s.get("accent_color")  or "").strip().lower()
     
+    # 1) tomar logo desde settings o atributo plano
+    logo_url = s.get("logo_url") or (getattr(branding, "logo_url", None) if branding else None)
+
+    # 2) normalizar rutas antiguas
+    if logo_url and logo_url.startswith("/static/uploads/"):
+        logo_url = logo_url.replace("/static/uploads/", "/uploads/", 1)
+
+    # 2) fallback absoluto
+    if not logo_url:
+        logo_url = "/static/public/assets/img/default-store.svg"
+
     return {
+
+        # Título / tagline
         "title":    (branding.display_name if branding else "Mi Tienda"),
-        "tagline":  s["tagline"] or "La mejor selección para ti",
-        "primary":  s["primary_color"] or DEFAULT_BRANDING_SETTINGS["primary_color"],
-        "accent":   s["accent_color"]  or DEFAULT_BRANDING_SETTINGS["accent_color"],
+        "tagline":  s.get("tagline") or "La mejor selección para ti",
+
+        # Colores con fallback a defaults globales
+        "primary":  s.get("primary_color") or DEFAULT_BRANDING_SETTINGS["primary_color"],
+        "accent":   s.get("accent_color")  or DEFAULT_BRANDING_SETTINGS["accent_color"],
+
+        # Contacto normalizado
         "wa":       norm_whatsapp(s.get("whatsapp","")),
         "ig":       norm_instagram(s.get("instagram","")),
-        "hero":     s.get("hero_image_url",""),
+
+        # Medios
+        "hero": s.get("hero_image_url", ""),
+        "logo": logo_url,
+        
     }

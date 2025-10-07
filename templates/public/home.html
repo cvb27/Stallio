@@ -3,16 +3,10 @@
 
 
 {# ====================== HERO / ENCABEZADO ====================== #}
-<header class="hero-modern text-white"
-        style="--brand-primary: {{ theme.primary }}; --brand-accent: {{ theme.accent }};">
-
+<header class="hero-modern text-white">
   <div class="container d-flex align-items-center flex-column text-center">
-
     {# Logo (si existe) o avatar por defecto #}
-    <img class="hero-logo mb-4"
-         src="{{ (branding.settings.logo_url if branding and branding.settings and branding.settings.logo_url else '/static/public/assets/img/default-store.svg') }}"
-         alt="logo">
-
+    <img class="hero-logo mb-4" src="{{ theme.logo }}{% if branding and branding.updated_at %}?v={{ branding.updated_at.timestamp() }}{% endif %}" class="{{ theme.title }}">
     <h1 class="hero-title text-uppercase mb-2">{{ theme.title }}</h1>
 
     <p class="hero-subtitle mb-2">{{ theme.tagline }}</p>
@@ -261,7 +255,8 @@ async function loadProducts(){
   const slug = "{{ (branding.slug if branding else vendor.slug) }}";
   try{
     const r = await fetch("/u/{{ vendor.slug }}/products.json", { cache: "no-store" });
-    const data = await r.json();
+    const raw = await r.json();
+    const data = Array.isArray(raw) ? raw : (raw.products || []);
     const grid = document.getElementById("products-grid");
     grid.innerHTML = data.map(p => `
       <div class="col-12 col-sm-6 col-lg-4"
