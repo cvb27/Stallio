@@ -69,21 +69,14 @@ async def create_product(
     
 ):
     owner_id = _owner_id(request)
+
+    # slug del dueño para la carpeta
+    owner = session.get(User, owner_id)
+    owner_slug = owner.slug if owner and owner.slug else str(owner_id)
     
     image_url = None
     if image and getattr(image, "filename", ""):
-        allowed = {"image/png", "image/jpeg", "image/webp"}
-        if image.content_type not in allowed:
-            raise HTTPException(status_code=400, detail="Formato de imagen no permitido")
         content = await image.read()
-        if len(content) > 5 * 1024 * 1024:
-            raise HTTPException(status_code=400, detail="Imagen demasiado grande (máx 5MB)")
-        
-        # necesitamos un slug del dueño para agrupar imágenes
-        owner = session.get(User, owner_id)
-        owner_slug = owner.slug if owner and owner.slug else f"user-{owner_id}"
-
-        # guarda en /uploads/products/<owner_slug>/<uuid>.<ext>
         image_url = save_product_bytes(owner_slug, content, image.filename)
 
     product = Product(
@@ -152,21 +145,14 @@ async def update_product(
     p = session.get(Product, product_id)
     if not p or p.owner_id != owner_id:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
-    
 
-    # si hay nueva imagen, subir y reemplazar
-    if image and image.filename:
-        allowed = {"image/png", "image/jpeg", "image/webp"}
-        if image.content_type not in allowed:
-            raise HTTPException(status_code=400, detail="Formato de imagen no permitido")
+
+    if image and getattr(image, "filename", ""):
+        owner = session.get(User, owner_id)
+        owner_slug = owner.slug if owner and owner.slug else str(owner_id)
         content = await image.read()
-        if len(content) > 5 * 1024 * 1024:
-            raise HTTPException(status_code=400, detail="Imagen demasiado grande (máx 5MB)")
-
-        owner = session.get(User, p.owner_id)
-        owner_slug = owner.slug if owner and owner.slug else f"user-{p.owner_id}"
-        new_url = save_product_bytes(owner_slug, content, image.filename)
-
+        p.image_url = save_product_bytes(owner_slug, content, image.filename)
+    
     # actualizar campos
     p.name = name
     p.price = price

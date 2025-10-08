@@ -7,8 +7,6 @@ BASE_DIR = Path(__file__).resolve().parent
 # En local, por defecto usamos ./uploads en la raíz del repo.
 DEFAULT_LOCAL_UPLOADS = (BASE_DIR.parent / "uploads").resolve()
 UPLOADS_DIR = Path(os.getenv("UPLOADS_DIR", str(DEFAULT_LOCAL_UPLOADS))).resolve()
-UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
-
 
 """Detecta extensión segura a partir del nombre"""
 def _ext_from_name(name: str) -> str:
@@ -33,7 +31,7 @@ def save_vendor_bytes(vendor_slug: str, content: bytes, filename: str) -> str:
     dest_path.write_bytes(content)
     # URL pública
     return f"/uploads/{rel.as_posix()}"
-    # return f"/uploads/vendors/{slug}/{safe_name}"
+   
     
 
 def save_product_bytes(owner_slug: str, content: bytes, filename: str) -> str:
@@ -48,16 +46,4 @@ def save_product_bytes(owner_slug: str, content: bytes, filename: str) -> str:
     dest_path.write_bytes(content)
     return f"/uploads/{rel.as_posix()}"
 
-def normalize_public_url(url: str | None) -> str | None:
-    """
-    Compatibilidad hacia atrás:
-    - Si viene de /static/uploads/<file>, la normalizamos a /uploads/legacy/<file>.
-      (Habrá un shim en main.py que copia/expone esas imágenes en el volumen).
-    """
-    if not url:
-        return url
-    if url.startswith("/static/uploads/"):
-        filename = url.rsplit("/", 1)[-1]
-        return f"/uploads/legacy/{filename}"
-    return url
 

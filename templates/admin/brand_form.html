@@ -74,14 +74,12 @@
             <div class="mb-3">
               <label class="form-label">Logo (PNG/JPG/WEBP) (Opcional)</label>
               <input class="form-control" type="file" name="logo" accept=".png,.jpg,.jpeg,.webp">
-              {# 👇 SIEMPRE mostrar el que guardamos en settings.logo_url (con fallback) #}
-              {% set _logo = (branding.settings.logo_url if branding and branding.settings and branding.settings.logo_url else (branding.logo_url if branding and branding.logo_url else "")) %}
-              {% if _logo %}
-              
+              {% if branding.settings and branding.settings.logo_url %}
                 <div class="mt-2">
-                  <img src="{{ _logo }}" alt="logo" style="height:48px;border-radius:8px">
+                  <img src="{{ branding.settings.logo_url }}" alt="logo" style="height:48px;border-radius:8px">
                 </div>
-              {% endif %}
+              {% endif %}              
+                
             </div>
 
             <div class="d-grid">
@@ -99,9 +97,8 @@
         </div>
         <div class="card-body">
           <div class="d-flex align-items-center gap-3">
-            {% set _logo = (branding.settings.logo_url if branding and branding.settings and branding.settings.logo_url else (branding.logo_url if branding and branding.logo_url else "")) %}
-            {% if _logo %}
-              <img src="{{ _logo }}" alt="logo" style="height:48px;border-radius:8px">
+            {% if branding.settings and branding.settings.logo_url %}
+              <img src="{{ branding.settings.logo_url }}" alt="logo" style="height:48px;border-radius:8px">
             {% endif %}
             <strong id="liveName">{{ branding.display_name }}</strong>
           </div>

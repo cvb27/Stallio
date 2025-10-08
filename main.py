@@ -25,11 +25,22 @@ app = FastAPI()
 # --- Static & Uploads ---
 BASE_DIR = Path(__file__).resolve().parent
 
-# 1) monta estáticos de tu plantilla admin/pública
+# 1) Ruta del volumen persistente (Railway: setea UPLOADS_DIR en /uploads)
+uploads_env = os.getenv("UPLOADS_DIR")
+if uploads_env:
+    UPLOADS_DIR = Path(uploads_env).resolve()      # p.ej. /uploads
+else:
+    UPLOADS_DIR = (BASE_DIR.parent / "uploads").resolve()
+
+# 2) Asegura carpetas antes de montar
+(UPLOADS_DIR).mkdir(parents=True, exist_ok=True)
+(UPLOADS_DIR / "vendors").mkdir(parents=True, exist_ok=True)   # logos
+(UPLOADS_DIR / "products").mkdir(parents=True, exist_ok=True)  # productos
+
+# monta estáticos de tu plantilla admin/pública
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 
-# 2) Uploads (persistente/volumen)
-UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+# 4) ÚNICO mount público para subir/servir imágenes
 app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
 
 # Comandos varios
