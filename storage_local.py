@@ -3,7 +3,8 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
 
-# usa env en prod (Railway); en local usa ./uploads del repo
+# En prod leemos UPLOADS_DIR del entorno (ej. /uploads).
+# En local, por defecto usamos ./uploads en la raíz del repo.
 DEFAULT_LOCAL_UPLOADS = (BASE_DIR.parent / "uploads").resolve()
 UPLOADS_DIR = Path(os.getenv("UPLOADS_DIR", str(DEFAULT_LOCAL_UPLOADS))).resolve()
 
@@ -14,7 +15,8 @@ def _ext_from_name(name: str) -> str:
     for ext in (".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg"):
         if name.endswith(ext):
             return ext
-    guess = mimetypes.guess_extension(mimetypes.guess_type(name)[0] or "")
+    ctype, _ = mimetypes.guess_type(name)
+    guess = mimetypes.guess_extension(ctype or "")
     return guess or ".bin"
 
 """

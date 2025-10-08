@@ -1,12 +1,5 @@
 import os
 from dotenv import load_dotenv, find_dotenv
-
-# Carga base (opcional) y luego el específico por entorno
-load_dotenv(find_dotenv(".env", usecwd=True), override=False)
-env = os.getenv("ENV", "local").lower()
-load_dotenv(find_dotenv(".env.local" if env == "local" else ".env.prod", usecwd=True), override=True)
-
-
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
@@ -19,9 +12,27 @@ from notify import ws_manager
 from db import init_db, engine
 from sqlmodel import SQLModel, inspect
 from pathlib import Path
-from storage_local import UPLOADS_DIR
+
+# Carga base (opcional) y luego el específico por entorno
+load_dotenv(find_dotenv(".env", usecwd=True), override=False)
+env = os.getenv("ENV", "local").lower()
+load_dotenv(find_dotenv(".env.local" if env == "local" else ".env.prod", usecwd=True), override=True)
+
 
 app = FastAPI()
+
+# --- Static & Uploads ---
+BASE_DIR = Path(__file__).resolve().parent
+
+# 1) Resolvemos la ruta de uploads (env en prod, ./uploads en local)
+uploads_env = os.getenv("UPLOADS_DIR")
+if uploads_env:
+    UPLOADS_DIR = Path(uploads_env).resolve()   # En Railway: /uploads
+else:
+    UPLOADS_DIR = (BASE_DIR.parent / "uploads").resolve()
+
+# 2) Creamos la carpeta antes de montarla (evita RuntimeError en Starlette)
+UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 
 # Comandos varios
 # source .venv/bin/activate
@@ -30,23 +41,23 @@ app = FastAPI()
 
 
 # monta estáticos de tu plantilla admin/pública
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 
 # monta el directorio PERSISTENTE de uploads (volumen en prod)
 app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
 
+# --- Sesiones ---
 SECRET_KEY = os.getenv("SECRET_KEY")  # ← lee del .env / entorno
 if not SECRET_KEY:
     raise RuntimeError("SECRET_KEY no está definido(revisa tus .env / variables de entorno)")
 
 
-
+# --- Ciclo de vida ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()   # crea tablas una sola vez al boot
     yield       # no hacemos nada al shutdown (ya migraste a WebSocket)
 
-# app = FastAPI(lifespan=lifespan)
 app.router.lifespan_context = lifespan
 
 app.add_middleware(
@@ -104,18 +115,6 @@ app.include_router(debug.router)
 def ping():
     return {"ok": True}
 
-@app.get("/debug/db")
-def debug_db():
-    url = str(engine.url)
-    abs_path = None
-    if engine.url.database:
-        abs_path = str(Path(engine.url.database).resolve())
-    insp = inspect(engine)
-    return {
-        "engine_url": url,
-        "db_absolute_path": abs_path,
-        "tables": insp.get_table_names(),
-    }
 
 
 if __name__ == "__main__":
