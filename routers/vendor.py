@@ -245,12 +245,12 @@ async def brand_save(
         # DEBUG opcional
         log.info(f"[brand_save] Logo guardado para {vendor_slug}: {public_url}")
 
-    """
+
         # guarda la URL en settings (o en columna propia si prefieres)
         settings["logo_url"] = public_url
 
-    session.add(branding)
-    session.commit()
-    session.refresh(branding)
-    return RedirectResponse("/vendor/brand?ok=1", status_code=302)
-    """
+        session.add(branding)
+        session.commit()
+        session.refresh(branding)
+        return RedirectResponse("/vendor/brand?ok=1", status_code=302)
+   
