@@ -6,10 +6,13 @@ from models import Product, User
 from notify import ws_manager
 from db import get_session
 from datetime import timezone
+from storage_local import save_product_bytes
 import os, json, asyncio, uuid, shutil
 
 router = APIRouter(prefix="/admin/products", tags=["Admin Products"])
 templates = Jinja2Templates(directory="templates")
+
+DEFAULT_IMAGE_URL = "/static/img/product_placeholder.png"
 
 def _require_vendor(request: Request) -> int:
     if "user_id" not in request.session:
@@ -69,13 +72,19 @@ async def create_product(
     
     image_url = None
     if image and getattr(image, "filename", ""):
-        os.makedirs("static/uploads", exist_ok=True)     # asegura carpeta
-        ext = os.path.splitext(image.filename)[1]
-        fname = f"{uuid.uuid4().hex}{ext}"
-        dest_path = os.path.join("static", "uploads", fname)
-        with open(dest_path, "wb") as buffer:
-            shutil.copyfileobj(image.file, buffer)
-        image_url = f"/static/uploads/{fname}"           # 👈 URL servible
+        allowed = {"image/png", "image/jpeg", "image/webp"}
+        if image.content_type not in allowed:
+            raise HTTPException(status_code=400, detail="Formato de imagen no permitido")
+        content = await image.read()
+        if len(content) > 5 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="Imagen demasiado grande (máx 5MB)")
+        
+        # necesitamos un slug del dueño para agrupar imágenes
+        owner = session.get(User, owner_id)
+        owner_slug = owner.slug if owner and owner.slug else f"user-{owner_id}"
+
+        # guarda en /uploads/products/<owner_slug>/<uuid>.<ext>
+        image_url = save_product_bytes(owner_slug, content, image.filename)
 
     product = Product(
         name=name.strip(),
@@ -107,10 +116,14 @@ def edit_product_page(product_id: int, request: Request, session: Session = Depe
     return templates.TemplateResponse("admin/product_edit.html", {"request": request, "p": p})
 
 # ================== EDITAR (form) ==================
-DEFAULT_IMAGE_URL = "/static/img/product_placeholder.png"
 
 @router.get("/list.json")
 def products_json(request: Request, session: Session = Depends(get_session)):
+    """
+    Devuelve el listado del vendor autenticado con URLs normalizadas:
+    - /uploads/... (persistente)
+    - /static/uploads/... -> /uploads/legacy/... (compatibilidad)
+    """
     owner_id = _owner_id(request)
     rows = session.exec(select(Product).where(Product.owner_id == owner_id)).all()
     return [{
@@ -143,19 +156,16 @@ async def update_product(
 
     # si hay nueva imagen, subir y reemplazar
     if image and image.filename:
-        os.makedirs("static/uploads", exist_ok=True)
-        ext = os.path.splitext(image.filename)[1]
-        fname = f"{uuid.uuid4().hex}{ext}"
-        dest_path = os.path.join("static", "uploads", fname)
-        with open(dest_path, "wb") as buffer:
-            shutil.copyfileobj(image.file, buffer)
-        # borrar anterior si existía
-        if p.image_url:
-            old_path = p.image_url.lstrip("/")
-            if os.path.exists(old_path):
-                try: os.remove(old_path)
-                except Exception: pass
-        p.image_url = f"/static/uploads/{fname}"
+        allowed = {"image/png", "image/jpeg", "image/webp"}
+        if image.content_type not in allowed:
+            raise HTTPException(status_code=400, detail="Formato de imagen no permitido")
+        content = await image.read()
+        if len(content) > 5 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="Imagen demasiado grande (máx 5MB)")
+
+        owner = session.get(User, p.owner_id)
+        owner_slug = owner.slug if owner and owner.slug else f"user-{p.owner_id}"
+        new_url = save_product_bytes(owner_slug, content, image.filename)
 
     # actualizar campos
     p.name = name

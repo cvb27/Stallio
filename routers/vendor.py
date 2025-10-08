@@ -227,18 +227,7 @@ async def brand_save(
         # Guarda físicamente en el volumen y trae URL pública /uploads/...
         public_url = save_vendor_bytes(vendor_slug, content, logo.filename)
 
-        # Escribe SIEMPRE en settings.logo_url (fuente de verdad)
-        settings = ensure_settings_dict(getattr(branding, "settings", None))
-        settings["logo_url"] = public_url
-        branding.settings = settings  # <-- importante: reasignar
-
-        # Compatibilidad: también completa la columna plana si existe
-        # (no se usa para render, pero no hace daño)
-        try:
-            branding.logo_url = public_url
-        except Exception:
-            pass
-
+        branding.settings["logo_url"] = public_url
         # Sube el updated_at para que el cache-buster del <img> cambie
         branding.updated_at = datetime.utcnow()
 

@@ -1,4 +1,4 @@
-import os
+import os, shutil
 from dotenv import load_dotenv, find_dotenv
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
@@ -12,6 +12,7 @@ from notify import ws_manager
 from db import init_db, engine
 from sqlmodel import SQLModel, inspect
 from pathlib import Path
+from storage_local import UPLOADS_DIR 
 
 # Carga base (opcional) y luego el específico por entorno
 load_dotenv(find_dotenv(".env", usecwd=True), override=False)
@@ -24,27 +25,37 @@ app = FastAPI()
 # --- Static & Uploads ---
 BASE_DIR = Path(__file__).resolve().parent
 
-# 1) Resolvemos la ruta de uploads (env en prod, ./uploads en local)
-uploads_env = os.getenv("UPLOADS_DIR")
-if uploads_env:
-    UPLOADS_DIR = Path(uploads_env).resolve()   # En Railway: /uploads
-else:
-    UPLOADS_DIR = (BASE_DIR.parent / "uploads").resolve()
+# 1) monta estáticos de tu plantilla admin/pública
+app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 
-# 2) Creamos la carpeta antes de montarla (evita RuntimeError en Starlette)
+# 2) Uploads (persistente/volumen)
 UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
 
 # Comandos varios
 # source .venv/bin/activate
 # rm -rf __pycache__
 # -uvicorn main:app --reload
 
-
-# monta estáticos de tu plantilla admin/pública
-app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
-
-# monta el directorio PERSISTENTE de uploads (volumen en prod)
-app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
+def _migrate_legacy_static_uploads():
+    """
+    Compatibilidad: copia /static/uploads/*.*
+    -> /uploads/legacy/*.* para que URLs antiguas sigan sirviendo.
+    Se ejecuta al boot. Idempotente.
+    """
+    legacy_src = BASE_DIR / "static" / "uploads"
+    legacy_dst = UPLOADS_DIR / "legacy"
+    if not legacy_src.exists():
+        return
+    legacy_dst.mkdir(parents=True, exist_ok=True)
+    for p in legacy_src.glob("*.*"):
+        target = legacy_dst / p.name
+        try:
+            if not target.exists() or target.stat().st_size == 0:
+                shutil.copy2(p, target)
+        except Exception:
+            # no interrumpimos el boot por esto
+            pass
 
 # --- Sesiones ---
 SECRET_KEY = os.getenv("SECRET_KEY")  # ← lee del .env / entorno
@@ -56,15 +67,13 @@ if not SECRET_KEY:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()   # crea tablas una sola vez al boot
+    _migrate_legacy_static_uploads()   # ← ejecuta la copia de compatibilidad
     yield       # no hacemos nada al shutdown (ya migraste a WebSocket)
 
 app.router.lifespan_context = lifespan
 
-app.add_middleware(
-    SessionMiddleware, 
-    secret_key=os.getenv("SECRET_KEY", "dev-fallback-change-me"))
 
-
+app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 
 @app.on_event("shutdown")
 async def _shutdown():
