@@ -6,7 +6,9 @@
 <header class="hero-modern text-white">
   <div class="container d-flex align-items-center flex-column text-center">
     {# Logo (si existe) o avatar por defecto #}
-    <img class="hero-logo mb-4" src="{{ theme.logo }}{% if branding and branding.updated_at %}?v={{ branding.updated_at.timestamp() }}{% endif %}" class="{{ theme.title }}">
+    <img class="hero-logo mb-4" 
+    src="{{ theme.logo }}{% if branding and branding.updated_at %}?v={{ branding.updated_at.timestamp() }}{% endif %}"
+    alt="{{ theme.title }}">
     <h1 class="hero-title text-uppercase mb-2">{{ theme.title }}</h1>
 
     <p class="hero-subtitle mb-2">{{ theme.tagline }}</p>
