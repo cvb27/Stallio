@@ -26,14 +26,31 @@ BASE_DIR = Path(__file__).resolve().parent
 UPLOADS_DIR = get_uploads_dir()
 (UPLOADS_DIR).mkdir(parents=True, exist_ok=True)
 
-# Estáticos propios
-app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
+# crea el volumen y subcarpetas necesarias (idempotente)
+for sub in ("", "products", "vendors", "legacy"):
+    (UPLOADS_DIR / sub).mkdir(parents=True, exist_ok=True)
 
-# ÚNICA ruta pública para medios persistentes
-app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR), html=False), name="uploads")
-app.mount("/products", StaticFiles(directory=str(UPLOADS_DIR / "products")), name="products_compat")
-app.mount("/vendors", StaticFiles(directory=str(UPLOADS_DIR / "vendors"), html=False), name="vendors_compat",)
-app.mount("/uploads/legacy", StaticFiles(directory=str(BASE_DIR / "static" / "uploads"), html=False), name="uploads_legacy",)
+# Mount canónico (fuente de verdad)
+app.mount(
+    "/uploads",
+    StaticFiles(directory=str(UPLOADS_DIR), html=False),
+    name="uploads",
+)
+
+# --- Compat temporal (solo si la usas) ---
+# Si quieres que la app NO falle aunque falte algo, ya no es necesario porque las creamos arriba.
+# Aun así, puedes dejarlo así de simple:
+app.mount(
+    "/products",
+    StaticFiles(directory=str(UPLOADS_DIR / "products"), html=False),
+    name="products_compat",
+)
+app.mount(
+    "/vendors",
+    StaticFiles(directory=str(UPLOADS_DIR / "vendors"), html=False),
+    name="vendors_compat",
+)
+
 
 print("DEBUG MOUNTS -> UPLOADS_DIR=", UPLOADS_DIR)
 print("DEBUG MOUNTS -> /uploads =>", str(UPLOADS_DIR))
