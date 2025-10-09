@@ -74,12 +74,6 @@
             <div class="mb-3">
               <label class="form-label">Logo (PNG/JPG/WEBP) (Opcional)</label>
               <input class="form-control" type="file" name="logo" accept=".png,.jpg,.jpeg,.webp">
-              {% if branding.settings and branding.settings.logo_url %}
-                <div class="mt-2">
-                  <img src="{{ branding.settings.logo_url }}" alt="logo" style="height:48px;border-radius:8px">
-                </div>
-              {% endif %}              
-                
             </div>
 
             <div class="d-grid">
@@ -98,7 +92,9 @@
         <div class="card-body">
           <div class="d-flex align-items-center gap-3">
             {% if branding.settings and branding.settings.logo_url %}
-              <img src="{{ branding.settings.logo_url }}" alt="logo" style="height:48px;border-radius:8px">
+              <img src="{{ branding.logo_url }}{% if branding.updated_at %}?v={{ branding.updated_at.timestamp() }}{% endif %}"
+              alt="{{ branding.display_name or 'Logo' }}"
+              style="height:48px;border-radius:8px">
             {% endif %}
             <strong id="liveName">{{ branding.display_name }}</strong>
           </div>

@@ -6,7 +6,7 @@ from models import Product, User
 from notify import ws_manager
 from db import get_session
 from datetime import timezone
-from storage_local import save_product_bytes
+from storage_local import save_product_image
 import os, json, asyncio, uuid, shutil
 
 router = APIRouter(prefix="/admin/products", tags=["Admin Products"])
@@ -29,9 +29,9 @@ def get_flashed_messages(request: Request):
     return request.session.pop("_flashes", [])
 
 def _owner_id(request: Request) -> int:
-    if "user_id" not in request.session:
-        raise HTTPException(status_code=401, detail="No autenticado")
-    return int(request.session["user_id"])
+    uid = request.session.get("user_id")
+    if not uid: raise HTTPException(status_code=401, detail="No autenticado")
+    return int(uid)
 
 def _iso(dt):
     if not dt: return None
@@ -60,47 +60,36 @@ async def products_dashboard(
 @router.post("/create")
 async def create_product(
     request: Request,
+    session: Session = Depends(get_session),
     name: str = Form(...),
     price: float = Form(...),
     stock: int = Form(0),
     description: str = Form(""),
     image: UploadFile | None = File(None),
-    session: Session = Depends(get_session),
-    
 ):
     owner_id = _owner_id(request)
-
-    # slug del dueño para la carpeta
     owner = session.get(User, owner_id)
-    owner_slug = owner.slug if owner and owner.slug else str(owner_id)
-    
+    slug = owner.slug or str(owner_id)
+
     image_url = None
     if image and getattr(image, "filename", ""):
         content = await image.read()
-        image_url = save_product_bytes(owner_slug, content, image.filename)
+        if content:
+            image_url = save_product_image(slug, content, image.filename)
 
-    product = Product(
+    p = Product(
         name=name.strip(),
-        description=description.strip() or None,
+        description=(description or "").strip() or None,
         price=price,
         stock=stock,
-        image_url=image_url,
-        owner_id=owner_id,             # 👈 CLAVE: setear dueño
+        image_url=image_url,   # ← guarda URL pública /uploads/...
+        owner_id=owner_id,
     )
-    session.add(product)
-    session.commit()
-    session.refresh(product)
-
-    try:
-        await ws_manager.broadcast(json.dumps({"type": "products_changed"}))
-    except Exception:
-        pass
-
-    flash(request, f"Producto '{product.name}' creado (ID {product.id}).", "success")
-    return RedirectResponse(f"/admin/products", status_code=303)
-
+    session.add(p); session.commit(); session.refresh(p)
+    return RedirectResponse(url=request.url_for("admin_products"), status_code=303)
+    # return {"ok": True, "product_id": p.id, "image_url": p.image_url}
 # ================== EDITAR (form) ==================
-@router.get("{product_id}/edit", response_class=HTMLResponse)
+@router.get("/{product_id}/edit", response_class=HTMLResponse)
 def edit_product_page(product_id: int, request: Request, session: Session = Depends(get_session)):
     owner_id = _require_vendor(request)
     p = session.get(Product, product_id)
@@ -128,51 +117,45 @@ def products_json(request: Request, session: Session = Depends(get_session)):
         "created_at": p.created_at.isoformat()
     } for p in rows]
 
+@router.get("/u/{slug}/products.json")
+def public_products_json(slug: str, session: Session = Depends(get_session)):
+    user, _ = resolve_store(session, slug)
+    rows = session.exec(select(Product).where(Product.owner_id == user.id)).all()
+    return [{
+        "id": p.id, "name": p.name, "price": p.price, "stock": p.stock,
+        "image_url": p.image_url or "/static/img/product_placeholder.png",
+        "created_at": p.created_at.isoformat(),
+    } for p in rows]
+
 # ================== UPDATE ==================
 @router.post("/update/{product_id}")
 async def update_product(
     product_id: int,
     request: Request,
+    session: Session = Depends(get_session),
     name: str = Form(...),
     price: float = Form(...),
     stock: int = Form(0),
-    category: str = Form(""),
     description: str = Form(""),
     image: UploadFile | None = File(None),
-    session: Session = Depends(get_session),
 ):
-    owner_id = _require_vendor(request)
+    owner_id = _owner_id(request)
     p = session.get(Product, product_id)
-    if not p or p.owner_id != owner_id:
-        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    if not p or p.owner_id != owner_id: raise HTTPException(status_code=404, detail="Producto no encontrado")
 
+    p.name = name.strip(); p.price = price; p.stock = stock
+    p.description = (description or "").strip() or None
 
     if image and getattr(image, "filename", ""):
         owner = session.get(User, owner_id)
-        owner_slug = owner.slug if owner and owner.slug else str(owner_id)
+        slug = owner.slug or str(owner_id)
         content = await image.read()
-        p.image_url = save_product_bytes(owner_slug, content, image.filename)
-    
-    # actualizar campos
-    p.name = name
-    p.price = price
-    p.stock = stock
-    p.description = description or None
+        if content:
+            p.image_url = save_product_image(slug, content, image.filename)
 
-    session.add(p)
-    session.commit()
-    session.refresh(p)
-
-    # FIX: emite una sola vez
-    try:
-        await ws_manager.broadcast(json.dumps({"type": "products_changed"}))
-    except Exception:
-        pass
-    
-
-    flash(request, f"Producto '{p.name}' actualizado.", "success")
-    return RedirectResponse("/admin/products", status_code=303)
-
+    session.add(p); session.commit(); session.refresh(p)
+    return RedirectResponse(url=request.url_for("admin_products"), status_code=303)
+    # return {"ok": True, "product_id": p.id, "image_url": p.image_url}
 # ================== DELETE ==================
 
 @router.post("/delete/{product_id}")

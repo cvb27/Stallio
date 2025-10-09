@@ -8,13 +8,18 @@ from typing import Optional
 from copy import deepcopy
 from datetime import datetime
 from routers.store_helpers import resolve_store, get_branding_by_owner, ensure_settings_dict, norm_instagram, norm_whatsapp,build_theme
-from storage_local import save_vendor_bytes
+from storage_local import save_vendor_logo
 import re, unicodedata
 import logging
 log = logging.getLogger("uvicorn.error")  # usa el logger de Uvicorn
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
+
+def _current_owner_id(request: Request) -> int:
+    uid = request.session.get("user_id")
+    if not uid: raise HTTPException(status_code=401, detail="No autenticado")
+    return int(uid)
 
 def _require_vendor_own(request: Request, session: Session, slug: str) -> Optional[User]:
     """Devuelve el User si el slug corresponde al usuario logueado; si no, None."""
@@ -98,7 +103,7 @@ def public_store(
     })
 
 # Form "Editar mi página"
-@router.get("/vendor/brand", response_class=HTMLResponse)
+@router.get("/vendor/brand", name="brand_form", response_class=HTMLResponse)
 async def brand_form(
     request: Request, 
     session: Session = Depends(get_session)):
@@ -128,118 +133,38 @@ async def brand_form(
     })
 
 # Guardar cambios del branding
-@router.post("/vendor/brand", response_class=HTMLResponse)
+@router.post("/vendor/brand")
 async def brand_save(
     request: Request,
     session: Session = Depends(get_session),
     display_name: str = Form(...),
-    slug: Optional[str] = Form(None),
-    branding_id: Optional[int] = Form(None),
-    tagline: Optional[str] = Form(None),      
-    whatsapp: Optional[str] = Form(None),     
-    instagram: Optional[str] = Form(None),
     logo: UploadFile | None = File(None),
-    location: Optional[str] = Form(None),
 ):
-       
-    """
-    Crea/actualiza la configuración de marca del vendor.
-    - Persiste el logo en el volumen /uploads (vía save_vendor_bytes)
-    - Guarda la URL del logo en settings["logo_url"]
-    - Reasigna 'branding.settings' al final para garantizar persistencia
-    """
-
-    owner_id = request.session.get("user_id")
-    if not owner_id:
-        raise HTTPException(status_code=401, detail="No autenticado")
-    
-    # 1) Carga el registro a editar (por ID del form o el más reciente del owner)
-    branding = None
-    if branding_id:
-        branding = session.exec(
-            select(VendorBranding).where(
-                VendorBranding.id == branding_id,
-                VendorBranding.owner_id == owner_id
-            )
-        ).first()
+    owner_id = _current_owner_id(request)
+    branding = session.exec(select(VendorBranding).where(VendorBranding.owner_id == owner_id)).first()
     if not branding:
-        branding = get_branding_by_owner(session, owner_id)
-    
-    # 2) fallback al más reciente por owner
-    if not branding:
+        # crea si no existe
         user = session.exec(select(User).where(User.id == owner_id)).first()
-        base = user.slug if user and getattr(user, "slug", None) else f"tienda-{owner_id}"
-        branding = VendorBranding(
-            owner_id=owner_id,
-            slug=_unique_slug(session, base),
-            display_name=(display_name or "Mi Tienda").strip(),
-            settings=deepcopy(DEFAULT_BRANDING_SETTINGS),
-        )
-        session.add(branding)
-        session.commit()
-        session.refresh(branding)
+        branding = VendorBranding(owner_id=owner_id, slug=user.slug, display_name=display_name, settings={})
+        session.add(branding); session.commit(); session.refresh(branding)
 
-     # 3) Actualizamos metadatos básicos
-    branding.display_name = (display_name or "Mi Tienda").strip()
+    branding.display_name = display_name.strip()
     branding.updated_at = datetime.utcnow()
 
-    # 4) Preparar dict de settings (con defaults) y escribir los campos del form
-    settings = ensure_settings_dict(getattr(branding, "settings", None))
-    settings["tagline"]   = (tagline or "").strip()
-    settings["whatsapp"]  = norm_whatsapp(whatsapp or "")
-    settings["instagram"] = norm_instagram(instagram or "")
-    settings["location"]  = (location or "").strip() 
-
-    # 5) cambio de slug (opcional)
-    if slug is not None:
-        wanted = _slugify(slug)
-        if wanted and wanted != branding.slug:
-            new_slug = _unique_slug(session, wanted)
-            user = session.exec(select(User).where(User.id == owner_id)).first()
-            if user:
-                conflict = session.exec(
-                    select(User).where(User.slug == new_slug, User.id != owner_id)
-                ).first()
-                if conflict:
-                    return RedirectResponse("/vendor/brand?err=Slug+ya+en+uso", status_code=302)
-                user.slug = new_slug
-            branding.slug = new_slug
-
-    # 6) LOGO (persistente en volumen /uploads/vendors/<slug>/file)
-    #    Asegura que realmente guardamos el archivo y que settings.logo_url queda guardado.
     if logo and getattr(logo, "filename", ""):
-        # Validaciones mínimas
-        ALLOWED = {"image/png", "image/jpeg", "image/webp", "image/svg+xml", "image/gif"}
-        if logo.content_type not in ALLOWED:
-            return RedirectResponse("/vendor/brand?err=Formato+no+permitido", status_code=302)
-
         content = await logo.read()
         if not content:
-            return RedirectResponse("/vendor/brand?err=Archivo+vacío", status_code=302)
-        
-        if len(content) > 3 * 1024 * 1024:  # 3MB
-            return RedirectResponse("/vendor/brand?err=Archivo+muy+grande+(3MB)", status_code=302)
+            raise HTTPException(status_code=400, detail="Logo vacío")
+        # Guardar físicamente y persistir URL pública
+        public_url = save_vendor_logo(branding.slug, content, logo.filename)
+        branding.logo_url = public_url  # ← columna simple; las vistas usarán este campo
 
-        # slug de carpeta para el vendor
-        vendor = session.exec(select(User).where(User.id == owner_id)).first()
-        vendor_slug = vendor.slug if vendor and vendor.slug else branding.slug.strip()
-
-        # Guarda físicamente en el volumen y trae URL pública /uploads/...
-        public_url = save_vendor_bytes(vendor_slug, content, logo.filename)
-
-        branding.settings["logo_url"] = public_url
-        # Sube el updated_at para que el cache-buster del <img> cambie
-        branding.updated_at = datetime.utcnow()
-
-        # DEBUG opcional
-        log.info(f"[brand_save] Logo guardado para {vendor_slug}: {public_url}")
-
-
-        # guarda la URL en settings (o en columna propia si prefieres)
-        settings["logo_url"] = public_url
-
-        session.add(branding)
-        session.commit()
-        session.refresh(branding)
-        return RedirectResponse("/vendor/brand?ok=1", status_code=302)
-   
+    session.add(branding); session.commit(); session.refresh(branding)
+    
+    return templates.TemplateResponse("admin/brand_form.html", {
+        "request": request,
+        "branding": branding
+    })
+    
+    
+    # return {"ok": True, "branding_id": branding.id, "logo_url": branding.logo_url}

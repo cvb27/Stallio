@@ -3,7 +3,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse, JSONResponse
 from sse_starlette.sse import EventSourceResponse
 from sqlmodel import Session, select
-from models import Product, PaymentReport, User
+from models import Product, PaymentReport, User, VendorBranding
 from db import get_session
 from notify import ws_manager
 from sms import send_sms
@@ -15,6 +15,11 @@ DEFAULT_IMAGE_URL = "/static/img/product_placeholder.png"
 
 router = APIRouter(prefix="", tags=["Public"])
 templates = Jinja2Templates(directory="templates")
+
+def _get_user_by_slug(session: Session, slug: str) -> User:
+    user = session.exec(select(User).where(User.slug == slug)).first()
+    if not user: raise HTTPException(status_code=404, detail="Vendedor no encontrado")
+    return user
 
 # ---------- HOME MASTER ----------
 @router.get("/", include_in_schema=False)
@@ -34,46 +39,28 @@ async def public_home(request: Request, session: Session = Depends(get_session))
     })
     
 
-@router.get("/u/{slug}", response_class=HTMLResponse)
+@router.get("/u/{slug}")
 def public_store(slug: str, request: Request, session: Session = Depends(get_session)):
-    user, branding = resolve_store(session, slug)
-    products = session.exec(
-        select(Product)
-        .where(Product.owner_id == user.id)
-        .order_by(Product.id.desc())).all()
-    theme = build_theme(branding)
+    user = _get_user_by_slug(session, slug)
+    branding = session.exec(select(VendorBranding).where(VendorBranding.owner_id == user.id)).first()
+    products = session.exec(select(Product).where(Product.owner_id == user.id)).all()
     return templates.TemplateResponse("public/home.html", {
         "request": request,
         "vendor": user,
         "branding": branding,
-        "theme": theme,
-        "products": products,
+        "products": products,  # cada p.image_url ya es /uploads/...
     })
 
 # JSON para la grilla pública del vendor
 
 @router.get("/u/{slug}/products.json")
 def public_products_json(slug: str, session: Session = Depends(get_session)):
-    user, branding = resolve_store(session, slug)
-
-    products  = session.exec(
-        select(Product)
-        .where(Product.owner_id == user.id)
-        .order_by(Product.id.desc())
-    ).all()
-
-    data = []
-    for p in products:
-        data.append({
-            "id": p.id,
-            "name": p.name,
-            "price": float(p.price or 0.0),
-            "description": p.description or "",
-            "image_url": getattr(p, "image_url", None) or DEFAULT_IMAGE_URL,
-            "slug": getattr(p, "slug", None),
-            "available": getattr(p, "available", True), 
-        })
-    return JSONResponse({"ok": True, "count": len(data), "products": data})    
+    user = _get_user_by_slug(session, slug)
+    rows = session.exec(select(Product).where(Product.owner_id == user.id)).all()
+    return [{
+        "id": p.id, "name": p.name, "price": p.price, "stock": p.stock,
+        "image_url": p.image_url,  # /uploads/...
+    } for p in rows]
 
 
 @router.get("/public/payment-info")
