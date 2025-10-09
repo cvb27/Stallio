@@ -32,7 +32,13 @@ app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="stat
 # ÚNICA ruta pública para medios persistentes
 app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR), html=False), name="uploads")
 
-
+app.mount("/products", StaticFiles(directory=str(UPLOADS_DIR / "products")), name="products_compat")
+app.mount("/vendors",  StaticFiles(directory=str(UPLOADS_DIR / "vendors")),  name="vendors_compat")
+app.mount(
+    "/uploads/legacy",
+    StaticFiles(directory=str(BASE_DIR / "static" / "uploads"), html=False),
+    name="uploads_legacy",
+)
 
 print("DEBUG MOUNTS -> UPLOADS_DIR=", UPLOADS_DIR)
 print("DEBUG MOUNTS -> /uploads =>", str(UPLOADS_DIR))
