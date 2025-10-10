@@ -7,8 +7,8 @@
   <div class="container d-flex align-items-center flex-column text-center">
     {# Logo (si existe) o avatar por defecto #}
     <img class="hero-logo mb-4" 
-    src="{{ branding.logo_url or '/static/public/assets/img/portfolio/cabin.png' }}"
-    alt="{{ branding.display_name or vendor.slug }}">
+    src="{{ theme.logo or '/public/assets/img/default-store.svg' }}"
+    alt="{{ theme.title }}">
     <h1 class="hero-title text-uppercase mb-2">{{ theme.title }}</h1>
 
     <p class="hero-subtitle mb-2">{{ theme.tagline }}</p>
