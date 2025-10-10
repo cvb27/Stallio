@@ -36,10 +36,21 @@ else:
 (UPLOADS_DIR / "products").mkdir(parents=True, exist_ok=True)  # productos
 
 # 3) Estáticos propios
-app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
+app.mount("/static", 
+    StaticFiles(directory=str(BASE_DIR / "static")), 
+    name="static")
 
 # 4) ÚNICO mount público para subir/servir imágenes
-app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
+app.mount(
+    "/uploads", 
+    StaticFiles(directory=str(UPLOADS_DIR)), 
+    name="uploads")
+
+app.mount(
+    "/vendors",
+    StaticFiles(directory=str(UPLOADS_DIR / "vendors"), html=False),
+    name="vendors-legacy",
+)
 
 
 print("DEBUG MOUNTS -> UPLOADS_DIR=", UPLOADS_DIR)
