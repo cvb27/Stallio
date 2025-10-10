@@ -92,7 +92,7 @@
         <div class="card-body">
           <div class="d-flex align-items-center gap-3">
             {% if branding.settings and branding.settings.logo_url %}
-              <img src="{{ branding.logo_url }}{% if branding.updated_at %}?v={{ branding.updated_at.timestamp() }}{% endif %}"
+              <img src="{{ branding.settings.logo_url }}" alt="logo" style="height:48px;border-radius:8px"
               alt="{{ branding.display_name or 'Logo' }}"
               style="height:48px;border-radius:8px">
             {% endif %}

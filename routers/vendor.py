@@ -7,8 +7,8 @@ from models import User, Product, PaymentReport, VendorBranding, DEFAULT_BRANDIN
 from typing import Optional
 from copy import deepcopy
 from datetime import datetime
-from routers.store_helpers import resolve_store, get_branding_by_owner, ensure_settings_dict, norm_instagram, norm_whatsapp,build_theme
-from storage_local import save_vendor_logo
+from routers.store_helpers import resolve_store, get_branding_by_owner, ensure_settings_dict, norm_instagram, norm_whatsapp, build_theme
+from storage_local import save_vendor_bytes
 import re, unicodedata
 import logging
 log = logging.getLogger("uvicorn.error")  # usa el logger de Uvicorn
@@ -83,6 +83,20 @@ def vendor_dashboard(slug: str, request: Request, session: Session = Depends(get
         "branding": branding,  # <-- opcional
     })
 
+@router.get("/u/{slug}/products.json")
+def public_products_json(slug: str, session: Session = Depends(get_session)):
+    user, _ = resolve_store(session, slug)  # importa resolve_store desde store_helpers
+    rows = session.exec(select(Product).where(Product.owner_id == user.id)).all()
+    return [{
+        "id": p.id,
+        "name": p.name,
+        "price": p.price,
+        "stock": p.stock,
+        "image_url": p.image_url or "/static/img/product_placeholder.png",
+        "created_at": p.created_at.isoformat(),
+    } for p in rows]
+
+
 # ÚNICA ruta pública canónica
 @router.get("/u/{slug}", response_class=HTMLResponse)
 def public_store(
@@ -141,12 +155,21 @@ async def brand_save(
     logo: UploadFile | None = File(None),
 ):
     owner_id = _current_owner_id(request)
-    branding = session.exec(select(VendorBranding).where(VendorBranding.owner_id == owner_id)).first()
+    branding = session.exec(
+        select(VendorBranding).where(VendorBranding.owner_id == owner_id)
+    ).first()
+
     if not branding:
         # crea si no existe
         user = session.exec(select(User).where(User.id == owner_id)).first()
-        branding = VendorBranding(owner_id=owner_id, slug=user.slug, display_name=display_name, settings={})
-        session.add(branding); session.commit(); session.refresh(branding)
+        slug = user.slug if user and user.slug else f"tienda-{owner_id}"
+        branding = VendorBranding(
+            owner_id=owner_id, slug=user.slug, display_name=display_name, settings={}
+        )
+    
+        session.add(branding); 
+        session.commit(); 
+        session.refresh(branding)
 
     branding.display_name = display_name.strip()
     branding.updated_at = datetime.utcnow()
@@ -155,16 +178,22 @@ async def brand_save(
         content = await logo.read()
         if not content:
             raise HTTPException(status_code=400, detail="Logo vacío")
-        # Guardar físicamente y persistir URL pública
-        public_url = save_vendor_logo(branding.slug, content, logo.filename)
-        branding.logo_url = public_url  # ← columna simple; las vistas usarán este campo
+        # Guarda en volumen y persiste la URL pública en settings.logo_url
+        public_url = save_vendor_bytes(branding.slug, content, logo.filename)
+        settings = ensure_settings_dict(branding.settings)
+        settings["logo_url"] = public_url
+        branding.settings = settings
 
-    session.add(branding); session.commit(); session.refresh(branding)
+    session.add(branding); 
+    session.commit(); 
+    session.refresh(branding)
     
+    return RedirectResponse("/vendor/brand?ok=1", status_code=302)
+"""
     return templates.TemplateResponse("admin/brand_form.html", {
         "request": request,
         "branding": branding
     })
-    
+"""    
     
     # return {"ok": True, "branding_id": branding.id, "logo_url": branding.logo_url}

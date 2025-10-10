@@ -13,8 +13,6 @@ from sqlmodel import SQLModel, inspect, text, Session
 from pathlib import Path
 from fastapi.staticfiles import StaticFiles
 
-from storage_local import get_uploads_dir
-
 # Carga base (opcional) y luego el específico por entorno
 load_dotenv(find_dotenv(".env", usecwd=True), override=False)
 env = os.getenv("ENV", "local").lower()
@@ -22,34 +20,26 @@ load_dotenv(find_dotenv(".env.local" if env == "local" else ".env.prod", usecwd=
 
 app = FastAPI()
 
+# --- Static & Uploads ---
 BASE_DIR = Path(__file__).resolve().parent
-UPLOADS_DIR = get_uploads_dir()
+
+# 1) Ruta del volumen persistente (Railway: setea UPLOADS_DIR en /uploads)
+uploads_env = os.getenv("UPLOADS_DIR")
+if uploads_env:
+    UPLOADS_DIR = Path(uploads_env).resolve()      # p.ej. /uploads
+else:
+    UPLOADS_DIR = (BASE_DIR.parent / "uploads").resolve()
+
+# 2) Asegura carpetas antes de montar
 (UPLOADS_DIR).mkdir(parents=True, exist_ok=True)
+(UPLOADS_DIR / "vendors").mkdir(parents=True, exist_ok=True)   # logos
+(UPLOADS_DIR / "products").mkdir(parents=True, exist_ok=True)  # productos
 
-# crea el volumen y subcarpetas necesarias (idempotente)
-for sub in ("", "products", "vendors", "legacy"):
-    (UPLOADS_DIR / sub).mkdir(parents=True, exist_ok=True)
+# 3) Estáticos propios
+app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 
-# Mount canónico (fuente de verdad)
-app.mount(
-    "/uploads",
-    StaticFiles(directory=str(UPLOADS_DIR), html=False),
-    name="uploads",
-)
-
-# --- Compat temporal (solo si la usas) ---
-# Si quieres que la app NO falle aunque falte algo, ya no es necesario porque las creamos arriba.
-# Aun así, puedes dejarlo así de simple:
-app.mount(
-    "/products",
-    StaticFiles(directory=str(UPLOADS_DIR / "products"), html=False),
-    name="products_compat",
-)
-app.mount(
-    "/vendors",
-    StaticFiles(directory=str(UPLOADS_DIR / "vendors"), html=False),
-    name="vendors_compat",
-)
+# 4) ÚNICO mount público para subir/servir imágenes
+app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
 
 
 print("DEBUG MOUNTS -> UPLOADS_DIR=", UPLOADS_DIR)

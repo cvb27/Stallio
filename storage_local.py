@@ -2,32 +2,35 @@
 import os, uuid, mimetypes
 from pathlib import Path
 
-# Raíz de uploads (persistente). En prod define UPLOADS_DIR=/uploads (volumen).
-def get_uploads_dir() -> Path:
-    base = os.getenv("UPLOADS_DIR")
-    return Path(base).resolve() if base else (Path(__file__).resolve().parent.parent / "uploads").resolve()
 
-def _safe_ext(name: str) -> str:
+BASE_DIR = Path(__file__).resolve().parent
+DEFAULT_LOCAL_UPLOADS = (BASE_DIR.parent / "uploads").resolve()
+UPLOADS_DIR = Path(os.getenv("UPLOADS_DIR", str(DEFAULT_LOCAL_UPLOADS))).resolve()
+
+
+def _ext_from_name(name: str) -> str:
+    """Devuelve una extensión segura a partir del nombre."""
     name = (name or "").lower()
     for ext in (".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg"):
-        if name.endswith(ext): return ext
+        if name.endswith(ext):
+            return ext
     ctype, _ = mimetypes.guess_type(name)
     return (mimetypes.guess_extension(ctype or "") or ".bin")
 
-def _save_bytes(rel_path: Path, content: bytes) -> str:
-    root = get_uploads_dir()
-    dst = root / rel_path
-    dst.parent.mkdir(parents=True, exist_ok=True)
-    dst.write_bytes(content)
-    # URL pública bajo /uploads
-    return f"/uploads/{rel_path.as_posix()}"
+def save_vendor_bytes(vendor_slug: str, content: bytes, filename: str) -> str:
+    """Guarda logos en <UPLOADS_DIR>/vendors/<slug>/<uuid>.<ext> y retorna /uploads/..."""
+    ext = _ext_from_name(filename)
+    rel = Path("vendors") / vendor_slug / f"{uuid.uuid4().hex}{ext}"
+    dest = UPLOADS_DIR / rel
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_bytes(content)
+    return f"/uploads/{rel.as_posix()}"
 
-def save_vendor_logo(slug: str, content: bytes, filename: str) -> str:
-    ext = _safe_ext(filename)
-    rel = Path("vendors") / slug / f"{uuid.uuid4().hex}{ext}"
-    return _save_bytes(rel, content)
-
-def save_product_image(slug: str, content: bytes, filename: str) -> str:
-    ext = _safe_ext(filename)
-    rel = Path("products") / slug / f"{uuid.uuid4().hex}{ext}"
-    return _save_bytes(rel, content)
+def save_product_bytes(vendor_slug: str, content: bytes, filename: str) -> str:
+    """Guarda fotos de producto en <UPLOADS_DIR>/products/<slug>/<uuid>.<ext> y retorna /uploads/..."""
+    ext = _ext_from_name(filename)
+    rel = Path("products") / vendor_slug / f"{uuid.uuid4().hex}{ext}"
+    dest = UPLOADS_DIR / rel
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_bytes(content)
+    return f"/uploads/{rel.as_posix()}"

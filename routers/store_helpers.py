@@ -55,27 +55,15 @@ def norm_instagram(s: str) -> str:
 
 def build_theme(branding):
     """
-    Construye el dict 'theme' que consumen las vistas públicas.
-    Toma el logo desde settings["logo_url"] (o branding.logo_url como fallback).
-    Normaliza /static/uploads -> /uploads para compatibilidad.
+    Construye el dict 'theme' para vistas públicas.
+    Toma el logo desde settings["logo_url"] o usa un SVG por defecto.
     """
-
     s = ensure_settings_dict(getattr(branding, "settings", None))
 
+
     # 1) tomar logo desde settings o atributo plano
-    
-    logo_url = s.get("logo_url") or (getattr(branding, "logo_url", None) if branding else None)
 
-    # 2) normalizar rutas antiguas
-    
-    if logo_url and logo_url.startswith("/static/uploads/"):
-        
-        logo_url = logo_url.replace("/static/uploads/", "/uploads/", 1)
-
-    # 2) fallback absoluto
-    if not logo_url:
-        
-        logo_url = "/static/public/assets/img/default-store.svg"
+    logo_url = s.get("logo_url") or "/static/public/assets/img/default-store.svg"
 
     return {
 
