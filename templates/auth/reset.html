@@ -1,0 +1,21 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Set new password</title></head>
+<body>
+<h1>Choose a new password</h1>
+{% if not ok %}
+{% if error == 'expired' %}<p>Link expired. Please request a new one.</p>{% endif %}
+{% if error == 'invalid' %}<p>Invalid link. Please request a new one.</p>{% endif %}
+{% else %}
+<form method="post">
+<input type="hidden" name="token" value="{{ token }}">
+<label>New password</label>
+<input type="password" name="password" required>
+<label>Repeat password</label>
+<input type="password" name="password2" required>
+<button type="submit">Change password</button>
+</form>
+{% endif %}
+<p><a href="/login">Back to login</a></p>
+</body>
+</html>

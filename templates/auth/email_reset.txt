@@ -1,0 +1,8 @@
+You requested to reset your Stallio password.
+
+
+Click this link to set a new password:
+{reset_url}
+
+
+This link expires in 1 hour. If you didn’t request this, you can ignore this email.

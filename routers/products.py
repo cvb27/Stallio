@@ -137,9 +137,7 @@ def products_json(request: Request, session: Session = Depends(get_session)):
             "image_url": p.image_url or DEFAULT_IMAGE_URL,
             "created_at": p.created_at.isoformat(),
         }
-        for p in rows
-    ]
-
+        for p in rows]
 
 # ================== UPDATE ==================
 @router.post("/update/{product_id}")

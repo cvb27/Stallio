@@ -5,18 +5,14 @@ from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.staticfiles import StaticFiles
-from routers import dashboard, auth, public, products, support, users, master, vendor, share, orders, debug
+from routers import dashboard, auth, public, products, support, users, master, vendor, share, orders, debug, password_reset
 from contextlib import asynccontextmanager
 from notify import ws_manager
 from db import init_db, engine, get_session
 from sqlmodel import SQLModel, inspect, text, Session
 from pathlib import Path
 from fastapi.staticfiles import StaticFiles
-
-# Carga base (opcional) y luego el específico por entorno
-load_dotenv(find_dotenv(".env", usecwd=True), override=False)
-env = os.getenv("ENV", "local").lower()
-load_dotenv(find_dotenv(".env.local" if env == "local" else ".env.prod", usecwd=True), override=True)
+from config import SECRET_KEY, PASSWORD_RESET_TOKEN_MAX_AGE, APP_BASE_URL
 
 app = FastAPI()
 
@@ -82,11 +78,7 @@ def _migrate_legacy_static_uploads():
             # no interrumpimos el boot por esto
             pass
 
-# --- Sesiones ---
-SECRET_KEY = os.getenv("SECRET_KEY")  # ← lee del .env / entorno
-if not SECRET_KEY:
-    raise RuntimeError("SECRET_KEY no está definido(revisa tus .env / variables de entorno)")
-
+app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 
 # --- Ciclo de vida ---
 @asynccontextmanager
@@ -184,6 +176,7 @@ app.include_router(master.router)
 app.include_router(share.router)
 app.include_router(orders.router)
 app.include_router(debug.router)
+app.include_router(password_reset.router)
 
 
 

@@ -1,0 +1,17 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Forgot password</title></head>
+<body>
+<h1>Reset your password</h1>
+{% if not sent %}
+<form method="post">
+<label>Email</label>
+<input type="email" name="email" required>
+<button type="submit">Send reset link</button>
+</form>
+{% else %}
+<p>If the email exists, we sent a reset link. Check your inbox.</p>
+{% endif %}
+<p><a href="/login">Back to login</a></p>
+</body>
+</html>

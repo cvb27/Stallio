@@ -1,4 +1,14 @@
 import os
+from dotenv import load_dotenv, find_dotenv
+
+# Carga base (opcional) y luego el específico por entorno
+load_dotenv(find_dotenv(".env", usecwd=True), override=False)
+env = os.getenv("ENV", "local").lower()
+load_dotenv(find_dotenv(".env.local" if env == "local" else ".env.prod", usecwd=True), override=True)
+
+SECRET_KEY = os.getenv("SECRET_KEY") # set strong in prod
+PASSWORD_RESET_TOKEN_MAX_AGE = int(os.getenv("PASSWORD_RESET_TOKEN_MAX_AGE", 3600)) # 1h
+APP_BASE_URL = os.getenv("APP_BASE_URL", "https://stallio.app") # used in emails
 
 ENV = os.getenv("ENV", "local")
 

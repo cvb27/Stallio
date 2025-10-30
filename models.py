@@ -35,6 +35,7 @@ class User(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     email: EmailStr = Field(sa_column=Column(String(255), nullable=False, index=True))
     password_hash: str = Field(sa_column=Column(String(255), nullable=False))
+    reset_token_version: int = Field(default=0) # IMPORTANT: bump this to invalidate previously issued tokens after reset
     name: Optional[str] = Field(default=None, sa_column=Column(String(120)))
     is_active: bool = Field(default=True, nullable=False)
     is_admin: bool = Field(default=False, nullable=False)
