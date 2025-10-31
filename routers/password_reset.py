@@ -6,7 +6,7 @@ from email_validator import validate_email, EmailNotValidError
 
 from models import User
 from db import get_session # your existing dependency
-from utils.security import hash_password
+from utils.security import hash_password, generate_reset_token, verify_reset_token
 from services.emailer import send_email
 
 # Import settings from main (or a config module)
