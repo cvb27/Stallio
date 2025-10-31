@@ -5,7 +5,7 @@ from config import ADMIN_EMAIL, ADMIN_PASSWORD, BASE_URL, RESET_TOKEN_TTL_MIN
 from sqlmodel import Session, select
 from db import get_session
 from models import User, PasswordReset
-from security import hash_password, verify_password
+from utils.security import hash_password, verify_password
 from pydantic import EmailStr
 from starlette.status import HTTP_302_FOUND, HTTP_303_SEE_OTHER
 from werkzeug.security import generate_password_hash
