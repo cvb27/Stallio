@@ -29,8 +29,10 @@
     </style>
 
     </head>
+    
     <body id="page-top">
         <!-- Navigation-->
+
 
         <nav class="navbar navbar-expand-lg text-uppercase fixed-top" id="mainNav">
             <div class="container">
@@ -44,11 +46,19 @@
                         <li class="nav-item mx-0 mx-lg-1"><a class="nav-link py-3 px-0 px-lg-3 rounded" href="#portfolio">Productos</a></li>
                         <li class="nav-item mx-0 mx-lg-1"><a class="nav-link py-3 px-0 px-lg-3 rounded" href="#about">Quienes Somos</a></li>
                         <li class="nav-item mx-0 mx-lg-1"><a class="nav-link py-3 px-0 px-lg-3 rounded" href="#contact">Contacto</a></li>
+                        <div class="ms-lg-auto cart-right d-flex align-items-center">
+                            <a href="#" id="open-cart"
+                                data-slug="{{ (branding.slug if branding else vendor.slug) }}"
+                                data-fetch="/u/{{ (branding.slug if branding else vendor.slug) }}/cart.json"
+                                data-count="/u/{{ (branding.slug if branding else vendor.slug) }}/cart/count.json">
+                                🛒 Cart (<span id="cart-count">{{ (session.get('cart')|length) if session else 0 }}</span>)
+                            </a>
+                        </div>
                     </ul>
                 </div>
             </div>
         </nav>
-
+            
 {% block content %}{% endblock %}
 
         <!-- Footer-->
@@ -295,5 +305,99 @@
         <!-- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *-->
         <script src="https://cdn.startbootstrap.com/sb-forms-latest.js"></script>
         <script src="/static/public/js/scripts.js"></script>
+        <script>
+/* ==== Cart counter bootstrap (global) ====
+   - Inicializa el contador del carrito leyendo /u/{slug}/cart/count.json
+   - Expone window.updateCartCount(count) para actualizarlo desde otros scripts
+*/
+(function(){
+  const cartLink = document.getElementById('open-cart');      // <a id="open-cart" ...>
+  const countEl  = document.getElementById('cart-count');      // <span id="cart-count">0</span>
+
+  // Exponer función global para actualizar desde el modal de producto
+  window.updateCartCount = function (count) {
+    if (countEl && typeof count === 'number') {
+      countEl.textContent = count;
+    }
+  };
+
+  // Si existen los elementos, inicializa el contador desde el backend
+  if (cartLink && countEl) {
+    const countURL = cartLink.dataset.count; // viene de data-count="/u/{slug}/cart/count.json"
+    if (countURL) {
+      fetch(countURL, { headers: { 'Accept': 'application/json' } })
+        .then(r => r.ok ? r.json() : { count: 0 })
+        .then(data => {
+          if (typeof data.count === 'number') window.updateCartCount(data.count);
+        })
+        .catch(() => { /* silencioso */ });
+    }
+  }
+})();
+</script>
     </body>
+    <style>
+  /* Altura/navbar fija + compensación del body */
+  :root { --navbar-height: 64px; }
+  @media (max-width: 991.98px){ :root { --navbar-height: 56px; } }
+
+  body { padding-top: var(--navbar-height); } /* evita que el hero quede tapado */
+  .bg-nav { background: #0f172a; }            /* mismo azul oscuro de "antes" */
+
+  /* Tipografía y aspecto del menú (como "antes") */
+  .navbar .nav-link {
+    color: rgba(255,255,255,.92);
+    letter-spacing: .02em;
+  }
+  .navbar .nav-link:hover,
+  .navbar .nav-link:focus {
+    color: #fff;
+  }
+
+  /* Pill activo verde (igual al screenshot “antes”) */
+  :root { --nav-accent: #10b981; } /* cámbialo si quieres tomarlo de theme.accent */
+  .navbar .active-link {
+    background: var(--nav-accent);
+    color: #063229 !important;
+    padding: .40rem .95rem;
+    border-radius: 999px;
+  }
+
+  /* Centrado real del menú entre brand y cart (desktop) */
+  .brand-left { margin-right: 1rem; }
+  .nav-center  { margin-left: auto; margin-right: auto; }
+
+  /* En móvil, que no quede “estirado”: centramos items y damos espacios */
+  @media (max-width: 991.98px){
+    .nav-center { 
+      margin: .75rem 0 .5rem 0;
+      align-items: center;
+    }
+    .navbar .nav-link { padding: .5rem .75rem; }
+    .cart-right { margin-bottom: .5rem; }
+  }
+   /* Estilo del Cart igual a las pestañas pero con borde */
+.cart-link {
+  border: 1px solid rgba(255,255,255,.7);
+  padding: .40rem .95rem;
+  color: #fff !important;
+  text-transform: uppercase;
+  font-weight: 600;
+  transition: background .15s, color .15s, border-color .15s;
+}
+
+/* Hover consistente */
+.cart-link:hover {
+  border-color: #fff;
+  background: rgba(255,255,255,.12);
+  color: #fff !important;
+}
+
+/* Asegura alineación exacta vertical */
+.cart-right .nav-link {
+  display: flex;
+  align-items: center;
+}
+</style>
+  
 </html>

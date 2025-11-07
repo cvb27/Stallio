@@ -3,7 +3,9 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select
 from db import get_session
-from models import User, Product, PaymentReport, VendorBranding, DEFAULT_BRANDING_SETTINGS
+
+from models import User, Product, PaymentReport, VendorBranding, DEFAULT_BRANDING_SETTINGS, Order, OrderItem
+
 from typing import Optional
 from copy import deepcopy
 from datetime import datetime
@@ -16,13 +18,19 @@ log = logging.getLogger("uvicorn.error")  # usa el logger de Uvicorn
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
+# ---------------------------
+# Helpers de sesión/seguridad
+# ---------------------------
+
 def _current_owner_id(request: Request) -> int:
     uid = request.session.get("user_id")
     if not uid: raise HTTPException(status_code=401, detail="No autenticado")
     return int(uid)
 
 def _require_vendor_own(request: Request, session: Session, slug: str) -> Optional[User]:
-    """Devuelve el User si el slug corresponde al usuario logueado; si no, None."""
+    """Devuelve el User si el slug corresponde al usuario logueado; si no, None.
+    Mantiene compatibilidad con el flujo actual del dashboard."""
+
     if "user_id" not in request.session:
         raise HTTPException(status_code=401, detail="No autenticado")
     vendor = session.exec(select(User).where(User.slug == slug)).first()
@@ -30,19 +38,32 @@ def _require_vendor_own(request: Request, session: Session, slug: str) -> Option
         return None
     return vendor
 
+# ---------------------------
+# Helpers de branding/slug
+# ---------------------------
+
 def _slugify(text: str) -> str:
     text = unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode('ascii')
     text = re.sub(r'[^a-zA-Z0-9-]+', '-', text.lower()).strip('-')
     return text or 'tienda'
 
 def _unique_slug(session: Session, wanted: str) -> str:
+
+    """
+    Devuelve un slug único a partir de 'wanted', probando sufijos -2, -3, ...
+    sobre la tabla VendorBranding.slug (que es lo que se expone públicamente).
+    """
+     
     base = _slugify(wanted)
     slug, i = base, 2
     while session.exec(select(VendorBranding).where(VendorBranding.slug == slug)).first():
         slug = f"{base}-{i}"; i += 1
     return slug
 
-# Vista/preview para el vendor (usa el mismo template que la pública)
+# --------------------------------------------
+# Vista/preview para el vendor (usa template público)
+# --------------------------------------------
+
 @router.get("/vendor/home", response_class=HTMLResponse)
 async def vendor_home(request: Request, session: Session = Depends(get_session)):
     owner_id = request.session.get("user_id")
@@ -60,7 +81,10 @@ async def vendor_home(request: Request, session: Session = Depends(get_session))
         "theme": theme,
     })
 
+# ----------------
 # Dashboard admin
+# ----------------
+
 @router.get("/admin/{slug}/dashboard", response_class=HTMLResponse)
 def vendor_dashboard(slug: str, request: Request, session: Session = Depends(get_session)):
     vendor = _require_vendor_own(request, session, slug)
@@ -69,9 +93,21 @@ def vendor_dashboard(slug: str, request: Request, session: Session = Depends(get
 
     # SOLO sus productos y pedidos
     products = session.exec(select(Product).where(Product.owner_id == vendor.id)).all()
-    reports  = session.exec(
-        select(PaymentReport).where(PaymentReport.owner_id == vendor.id).order_by(PaymentReport.id.desc())
-    ).all()
+
+    # CHG: Antes: .where(PaymentReport.owner_id == vendor.id) -> ya NO existe owner_id.
+    # Ahora: PaymentReport -> Order -> OrderItem -> Product; filtro por Product.vendor_id == vendor.id
+    # group_by para evitar duplicados si un mismo order tiene varios items del vendor.
+    
+    reports_q = (
+        select(PaymentReport)
+        .join(Order, PaymentReport.order_id == Order.id)
+        .join(OrderItem, OrderItem.order_id == Order.id)
+        .join(Product, Product.id == OrderItem.product_id)
+        .where(Product.owner_id == vendor.id)    # Nota: si tu modelo usa vendor_id, cambia aquí a vendor_id
+        .group_by(PaymentReport.id)
+        .order_by(PaymentReport.id.desc())
+    )
+    reports = session.exec(reports_q).all()
 
     branding = get_branding_by_owner(session, vendor.id)  # <-- agrega si tu layout lo usa
 
@@ -82,6 +118,10 @@ def vendor_dashboard(slug: str, request: Request, session: Session = Depends(get
         "reports": reports,
         "branding": branding,  # <-- opcional
     })
+
+# --------------------------
+# API pública (JSON productos)
+# --------------------------
 
 @router.get("/u/{slug}/products.json")
 def public_products_json(slug: str, session: Session = Depends(get_session)):
@@ -96,8 +136,10 @@ def public_products_json(slug: str, session: Session = Depends(get_session)):
         "created_at": p.created_at.isoformat(),
     } for p in rows]
 
-
+# -------------------------
 # ÚNICA ruta pública canónica
+# -------------------------
+
 @router.get("/u/{slug}", response_class=HTMLResponse)
 def public_store(
     slug: str, 
@@ -116,7 +158,10 @@ def public_store(
         
     })
 
+# --------------------------
 # Form "Editar mi página"
+# --------------------------
+
 @router.get("/vendor/brand", name="brand_form", response_class=HTMLResponse)
 async def brand_form(
     request: Request, 
@@ -146,7 +191,10 @@ async def brand_form(
         "branding": branding
     })
 
+# --------------------------
 # Guardar cambios del branding
+# --------------------------
+
 @router.post("/vendor/brand")
 async def brand_save(
     request: Request,
@@ -171,6 +219,7 @@ async def brand_save(
         session.commit(); 
         session.refresh(branding)
 
+     # Actualiza nombre
     branding.display_name = display_name.strip()
     branding.updated_at = datetime.utcnow()
 
@@ -189,11 +238,3 @@ async def brand_save(
     session.refresh(branding)
     
     return RedirectResponse("/vendor/brand?ok=1", status_code=302)
-"""
-    return templates.TemplateResponse("admin/brand_form.html", {
-        "request": request,
-        "branding": branding
-    })
-"""    
-    
-    # return {"ok": True, "branding_id": branding.id, "logo_url": branding.logo_url}

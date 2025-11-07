@@ -1,0 +1,43 @@
+<h1>Cart</h1>
+
+{% if not items %}
+  <p>Your cart is empty.</p>
+{% else %}
+  <table class="table">
+    <thead>
+      <tr><th>Product</th><th>Qty</th><th>Price</th><th>Line</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for it in items %}
+      <tr>
+        <td>{{ it.product.name }}</td>
+        <td>
+          <form method="post" action="/cart/set-qty" class="d-inline">
+            <input type="hidden" name="product_id" value="{{ it.product.id }}">
+            <input type="number" name="qty" value="{{ it.qty }}" min="1" style="width:70px">
+            <button class="btn btn-sm btn-outline-primary" type="submit">Update</button>
+          </form>
+        </td>
+        <td>${{ "%.2f"|format(it.product.price or 0) }}</td>
+        <td>${{ "%.2f"|format(it.line_total) }}</td>
+        <td>
+          <form method="post" action="/cart/remove" class="d-inline">
+            <input type="hidden" name="product_id" value="{{ it.product.id }}">
+            <button class="btn btn-sm btn-outline-danger" type="submit">Remove</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="d-flex justify-content-between">
+    <form method="post" action="/cart/clear">
+      <button class="btn btn-outline-secondary" type="submit">Clear cart</button>
+    </form>
+    <div>
+      <strong>Total: ${{ "%.2f"|format(total) }}</strong>
+      <a class="btn btn-primary ml-2" href="/checkout">Checkout / Report payment</a>
+    </div>
+  </div>
+{% endif %}

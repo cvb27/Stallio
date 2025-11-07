@@ -77,7 +77,7 @@
   </div>
 </section>
 
-{# ====================== MODAL (igual lógica, solo encabezado más limpio) ====================== #}
+{# ====================== MODAL PRODUCTO ====================== #}
 <div class="modal fade" id="modalProduct" tabindex="-1" aria-labelledby="modalProductLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
@@ -87,8 +87,12 @@
         <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Cerrar"></button>
       </div>
 
-      <form id="formReport" method="post" action="/u/{{ (branding.slug if branding else vendor.slug) }}/report-payment">
-        <input type="hidden" name="product_id" id="rp_product_id">
+      <!-- Un solo form: el backend decide según 'intent' -->
+      <form id="modal-action-form" method="post" action="/u/{{ (branding.slug if branding else vendor.slug) }}/modal-action">
+        <!-- Requeridos por backend -->
+        <input type="hidden" name="product_id" id="rp_product_id" value="">
+        <!-- Nunca confíes en el precio enviado por cliente; lo obtendremos por DB. Este hidden es opcional. -->
+        <input type="hidden" name="price_hint" id="rp_price_value" value="">
 
         <div class="modal-body pt-0">
           <div class="row g-4">
@@ -125,6 +129,7 @@
                     <label class="form-check-label" for="rp_type100">100% (total)</label>
                   </div>
                 </div>
+                <!-- Solo visual; el monto real lo calcula el servidor -->
                 <small class="text-muted d-block mt-1">A pagar: <b id="rp_amount_view">$0.00</b></small>
               </div>
 
@@ -143,10 +148,114 @@
 
         <div class="modal-footer border-0">
           <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Cancelar</button>
-          <button class="btn btn-primary" type="submit">Reportar pago</button>
+
+          <!-- Botón 1: añade al carrito -->
+          <button class="btn btn-outline-primary" type="submit" name="intent" value="cart">
+            Añadir al carrito
+          </button>
+
+          <!-- Botón 2: reportar pago -->
+          <button class="btn btn-primary" type="submit" name="intent" value="report">
+            Reportar pago
+          </button>
         </div>
       </form>
 
+    </div>
+  </div>
+</div>
+
+<!-- ====================== MODAL CARRITO ====================== -->
+<div class="modal fade" id="modalCart" tabindex="-1" aria-labelledby="modalCartLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+
+      <!-- Header -->
+      <div class="modal-header border-0">
+        <h5 class="modal-title" id="modalCartLabel">Tu carrito</h5>
+        <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+
+      <!-- Un solo form; el backend decide por 'intent=report_cart' -->
+      <form id="cart-modal-form"
+            method="post"
+            action="/u/{{ (branding.slug if branding else vendor.slug) }}/cart-modal-action">
+
+        <div class="modal-body pt-0">
+          <!-- Listado de items -->
+          <div id="cart-empty" class="alert alert-light" style="display:none;">
+            Tu carrito está vacío.
+          </div>
+
+          <div id="cart-table-wrap" style="display:none;">
+            <div class="table-responsive mb-3">
+              <table class="table table-sm align-middle">
+                <thead>
+                  <tr>
+                    <th style="width:60px;"></th>
+                    <th>Producto</th>
+                    <th class="text-end">Precio</th>
+                    <th class="text-center" style="width:90px;">Cant.</th>
+                    <th class="text-end">Subtotal</th>
+                  </tr>
+                </thead>
+                <tbody id="cart-rows">
+                  <!-- filas dinámicas -->
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <th colspan="4" class="text-end">Total</th>
+                    <th class="text-end"><span id="cart-total-view">$0.00</span></th>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
+            <!-- Monto a reportar -->
+            <div class="mb-3">
+              <label class="form-label">Monto a reportar</label>
+              <div class="d-flex align-items-center gap-4">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="amount_type" id="cart_type50" value="50" checked>
+                  <label class="form-check-label" for="cart_type50">50% (abono)</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="amount_type" id="cart_type100" value="100">
+                  <label class="form-check-label" for="cart_type100">100% (total)</label>
+                </div>
+              </div>
+              <small class="text-muted d-block mt-1">A pagar: <b id="cart-amount-view">$0.00</b></small>
+            </div>
+
+            <!-- Datos del pagador -->
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Tu nombre</label>
+                <input type="text" name="payer_name" id="cart_payer_name" class="form-control" placeholder="Nombre y apellido">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Teléfono</label>
+                <input type="tel" name="phone" id="cart_phone" class="form-control" placeholder="+1 555 555 5555">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="modal-footer border-0">
+          <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Seguir comprando</button>
+
+          <!-- Vaciar carrito (opcional, intent=empty_cart) -->
+          <button class="btn btn-outline-danger" type="submit" name="intent" value="empty_cart">
+            Vaciar carrito
+          </button>
+
+          <!-- Reportar la orden completa -->
+          <button class="btn btn-primary" type="submit" name="intent" value="report_cart">
+            Reportar pedido
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 </div>
@@ -281,7 +390,91 @@ async function loadProducts(){
     `).join("");
   }catch(e){ console.error("No se pudo actualizar productos:", e); }
 }
+
+// # ====================== JS del modal del cart ====================== #
+
+(function(){
+  const trigger = document.getElementById('open-cart');
+  if(!trigger) return;
+
+  const fetchURL = trigger.dataset.fetch; // /u/{slug}/cart.json
+  const form = document.getElementById('cart-modal-form');
+  const modalEl = document.getElementById('modalCart');
+
+  const $ = s => form.querySelector(s);
+  const rowsEl = $('#cart-rows');
+  const wrap = document.getElementById('cart-table-wrap');
+  const empty = document.getElementById('cart-empty');
+  const totalView = document.getElementById('cart-total-view');
+  const amountView = document.getElementById('cart-amount-view');
+  const type50 = document.getElementById('cart_type50');
+  const type100 = document.getElementById('cart_type100');
+
+  const money = n => Number(n||0).toLocaleString(undefined,{style:'currency',currency:'USD'});
+
+  function recomputeAmount(total){
+    const isTotal = type100.checked;
+    const amount = isTotal ? total : (total / 2);
+    amountView.textContent = money(amount);
+  }
+
+  async function loadCart(){
+    const res = await fetch(fetchURL, {headers:{'Accept':'application/json'}});
+    if(!res.ok){ rowsEl.innerHTML = ""; empty.style.display='block'; wrap.style.display='none'; return; }
+    const data = await res.json();
+    const items = data.items || []; // [{product_id, name, price, qty, image_url, subtotal}, ...]
+    rowsEl.innerHTML = "";
+
+    if(items.length === 0){
+      empty.style.display='block';
+      wrap.style.display='none';
+      totalView.textContent = money(0);
+      amountView.textContent = money(0);
+      return;
+    }
+
+    empty.style.display='none';
+    wrap.style.display='block';
+
+    let total = 0;
+    for(const it of items){
+      const subtotal = Number(it.price) * Number(it.qty);
+      total += subtotal;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><img src="${it.image_url||''}" alt="" style="width:48px;height:48px;object-fit:cover;border-radius:8px;"></td>
+        <td>${it.name}</td>
+        <td class="text-end">${money(it.price)}</td>
+        <td class="text-center">${it.qty}</td>
+        <td class="text-end">${money(subtotal)}</td>
+      `;
+      rowsEl.appendChild(tr);
+    }
+    totalView.textContent = money(total);
+    recomputeAmount(total);
+
+    // Guarda el total en dataset por si quieres usarlo luego
+    form.dataset.total = String(total);
+  }
+
+  // Recalcular “A pagar” al cambiar 50/100
+  type50.addEventListener('change', () => recomputeAmount(Number(form.dataset.total||0)));
+  type100.addEventListener('change', () => recomputeAmount(Number(form.dataset.total||0)));
+
+  // Abrir modal del cart
+  trigger.addEventListener('click', (ev)=>{
+    ev.preventDefault();
+    loadCart().then(()=>{
+      bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    });
+  });
+})();
+
+
+
 </script>
+
+
 
 {# ====================== ESTILOS LOCALES (mínimos) ====================== #}
 <style>
@@ -344,4 +537,144 @@ async function loadProducts(){
   border-color: var(--brand-accent);
 }
 </style>
+
+<!-- ========== LÓGICA DEL MODAL ========== -->
+
+<script>
+(function(){
+  const form = document.getElementById('product-modal-form');
+  if (!form) return;
+
+  // Accesos rápidos a elementos
+  const $ = sel => form.querySelector(sel);
+
+  // URLs derivadas de data-*
+  const reportURL = form.dataset.reportUrl;
+  const cartURL   = form.dataset.cartUrl;
+
+  // Elementos frecuentes
+  const qtyInput = $('#rp_qty');
+  const priceField = $('#rp_price');        // visible (formateado)
+  const priceValue = $('#rp_price_value');  // numérico (cálculos)
+  const amount50 = $('#rp_type50');
+  const amount100 = $('#rp_type100');
+  const amountView = $('#rp_amount_view');
+
+  // Helper: formatea número como precio
+  function money(n){ 
+    const x = Number(n || 0);
+    return x.toLocaleString(undefined, {style:'currency', currency:'USD'});
+  }
+
+  // Recalcula el monto “A pagar” (50% o 100% * qty)
+  function recomputeAmount() {
+    const price = Number(priceValue.value || 0);
+    const qty   = Math.max(1, Number(qtyInput.value || 1));
+    const isTotal = amount100.checked;
+    const base = price * qty;
+    const amount = isTotal ? base : base / 2;
+    amountView.textContent = money(amount);
+    return amount;
+  }
+
+  // Eventos: cuando cambia cantidad o el tipo (50/100), actualiza el monto
+  qtyInput.addEventListener('input', recomputeAmount);
+  amount50.addEventListener('change', recomputeAmount);
+  amount100.addEventListener('change', recomputeAmount);
+
+  // Cargar datos en el modal: esta función la deberías llamar
+  // al abrir el modal, pasando el producto que el usuario clickeó.
+  // Ejemplo de uso externo:
+  //   openProductModal({id, name, price, image_url, payment_info})
+  window.openProductModal = function (prod) {
+    // Seteamos todos los campos visibles y ocultos
+    $('#rp_product_id').value = prod.id;             // ⬅️ OBLIGATORIO para el backend
+    $('#rp_img').src = prod.image_url || '';
+    $('#rp_name').value = prod.name || '';
+    priceField.value = money(prod.price || 0);
+    priceValue.value = Number(prod.price || 0);
+    $('#rp_payment_info').textContent = prod.payment_info || '';
+
+    // Reset de campos del usuario
+    qtyInput.value = 1;
+    amount50.checked = true; // por defecto 50%
+    $('#rp_payer_name').value = '';
+    $('#rp_phone').value = '';
+
+    // Recalcula monto con los nuevos datos
+    recomputeAmount();
+
+    // Abre el modal (Bootstrap 5)
+    const m = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalProduct'));
+    m.show();
+  };
+
+  // Helper: POST JSON con manejo de errores legible
+  async function postJSON(url, payload) {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload),
+    });
+    const text = await res.text();
+    let data;
+    try { data = JSON.parse(text); } catch { data = text; }
+
+    if (!res.ok) {
+      // Muestra errores de Pydantic/422 en un alert “humano”
+      const msg = typeof data === 'string' ? data : JSON.stringify(data);
+      alert(`No se pudo completar la operación.\n\n${msg}`);
+      throw new Error(msg);
+    }
+    return data;
+  }
+
+  // Click: Añadir al carrito
+  document.getElementById('btn-add-cart')?.addEventListener('click', async () => {
+    const slug = form.dataset.slug;
+    const payload = {
+      product_id: Number(form.querySelector('#rp_product_id').value),
+      qty: Number(form.querySelector('#rp_qty').value || 1),
+    };
+    const data = await postJSON(`/u/${slug}/cart/add`, payload);
+
+    // ✅ ACTUALIZA CONTADOR EN NAVBAR
+    if (window.updateCartCount && typeof data.count === 'number') {
+      window.updateCartCount(data.count);
+    }
+
+    alert('Producto añadido al carrito');
+  });
+
+  // Click: Reportar pago
+  document.getElementById('btn-report').addEventListener('click', async () => {
+    const product_id = Number($('#rp_product_id').value);    // ⬅️ requerido
+    if (!product_id) {
+      alert('No se pudo identificar el producto.');
+      return;
+    }
+
+    const qty = Math.max(1, Number(qtyInput.value || 1));
+    const amount = recomputeAmount();
+
+    const payload = {
+      product_id,                                            // ⬅️ requerido
+      qty,
+      amount,
+      payer_name: ($('#rp_payer_name').value || '').trim(),
+      phone: ($('#rp_phone').value || '').trim() || null,
+    };
+
+    await postJSON(reportURL, payload);
+    alert('Pago reportado correctamente');
+
+    // Cierra el modal
+    const m = bootstrap.Modal.getInstance(document.getElementById('modalProduct'));
+    if (m) m.hide();
+  });
+
+  // Inicializa monto correcto por si el modal ya está en el DOM
+  recomputeAmount();
+})();
+</script>
 {% endblock %}

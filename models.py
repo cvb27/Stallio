@@ -112,3 +112,24 @@ class PasswordReset(SQLModel, table=True):
     created_at: datetime = Field(default_factory=now_utc, nullable=False)
     expires_at: datetime = Field(nullable=False)
     used_at: Optional[datetime] = None
+
+class Order(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    total_amount: float = 0
+    status: str = "reported"  # "reported" | "paid" | etc.
+
+class OrderItem(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    order_id: int = Field(index=True, foreign_key="order.id")
+    product_id: int = Field(index=True)
+    qty: int = 1
+    unit_price: float = 0
+
+class PaymentReport(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    order_id: int = Field(index=True, foreign_key="order.id")
+    payer_name: str
+    method: str
+    reference: str
+    amount: float
+    notes: str = ""

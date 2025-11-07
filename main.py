@@ -5,7 +5,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.staticfiles import StaticFiles
-from routers import dashboard, auth, public, products, support, users, master, vendor, share, orders, debug, password_reset
+from routers import dashboard, auth, public, products, support, users, master, vendor, share, orders, debug, password_reset, cart
 from contextlib import asynccontextmanager
 from notify import ws_manager
 from db import init_db, engine, get_session
@@ -177,6 +177,7 @@ app.include_router(share.router)
 app.include_router(orders.router)
 app.include_router(debug.router)
 app.include_router(password_reset.router)
+app.include_router(cart.router)
 
 
 

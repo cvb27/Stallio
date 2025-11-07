@@ -1,0 +1,41 @@
+<h1>Checkout / Report payment</h1>
+
+<table class="table">
+  <thead>
+    <tr><th>Product</th><th>Qty</th><th>Price</th><th>Line</th></tr>
+  </thead>
+  <tbody>
+    {% for it in items %}
+    <tr>
+      <td>{{ it.product.name }}</td>
+      <td>{{ it.qty }}</td>
+      <td>${{ "%.2f"|format(it.product.price or 0) }}</td>
+      <td>${{ "%.2f"|format(it.line_total) }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<p class="text-right"><strong>Total: ${{ "%.2f"|format(total) }}</strong></p>
+
+<form method="post" action="/checkout">
+  <div class="form-group">
+    <label>Payer name</label>
+    <input name="payer_name" class="form-control" required>
+  </div>
+  <div class="form-group">
+    <label>Payment method</label>
+    <input name="payment_method" class="form-control" placeholder="Zelle, Cash, Wire..." required>
+  </div>
+  <div class="form-group">
+    <label>Reference / Note</label>
+    <input name="reference" class="form-control" placeholder="Ref / last 4 / note..." required>
+  </div>
+  <div class="form-group">
+    <label>Notes (optional)</label>
+    <textarea name="notes" class="form-control" rows="3"></textarea>
+  </div>
+
+  <button class="btn btn-primary" type="submit">Submit single payment report</button>
+  <a class="btn btn-secondary" href="/cart">Back to cart</a>
+</form>

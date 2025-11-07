@@ -1,13 +1,13 @@
-{% extends "admin/layout.html" %}
+  {% extends "admin/layout.html" %}
 
-{% block content %}
-<div class="container-fluid">
-  <div class="d-flex align-items-center justify-content-between mb-4">
-    <h1 class="h4 mb-0">Administrar Órdenes</h1>
-    <button class="btn btn-outline-primary btn-sm" onclick="reloadAll()">Recargar todo</button>
-  </div>
+  {% block content %}
+  <div class="container-fluid">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+      <h1 class="h4 mb-0">Administrar Órdenes</h1>
+      <button class="btn btn-outline-primary btn-sm" onclick="reloadAll()">Recargar todo</button>
+    </div>
 
-  <!-- Pendientes -->
+    <!-- Pendientes -->
   <div class="card shadow mb-4">
     <div class="card-header d-flex align-items-center justify-content-between">
       <h5 class="mb-0">Órdenes / Pagos reportados</h5>
@@ -15,31 +15,50 @@
     </div>
     <div class="card-body">
       <div class="table-responsive">
+        <!-- CHANGE: columnas actualizadas a multi-ítem -->
         <table class="table table-sm table-striped">
           <thead>
             <tr>
               <th>ID</th>
               <th>Fecha</th>
-              <th>Producto</th>
-              <th>Cant.</th>
-              <th>Abono</th>
+              <th>Productos</th>      <!-- CHANGE: antes 1 producto; ahora lista -->
+              <th>Ítems</th>          <!-- CHANGE: suma de qty -->
               <th>Monto</th>
-              <th>Cliente</th>
-              <th>Teléfono</th>
+              <th>Cliente</th>        <!-- mantenemos -->
               <th style="width:120px;">Acción</th>
             </tr>
           </thead>
           <tbody id="orders-body">
+            {# RENDER INICIAL (server-side) #}
             {% for o in orders %}
             <tr data-row-id="{{ o.id }}">
               <td>#{{ o.id }}</td>
-              <td>{{ o.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
-              <td>{{ o.product_name }}</td>
-              <td>{{ o.qty }}</td>
-              <td>{{ '50%' if o.amount_type == '50' else '100%' }}</td>
-              <td>${{ '%.2f'|format(o.amount) }}</td>
+              <!-- CHANGE: created_at es ISO string del backend → no usar strftime aquí -->
+              <td>{{ o.created_at or '-' }}</td>
+
+              <!-- CHANGE: lista de productos con qty -->
+              <td>
+                {% if o["items"] and o["items"]|length > 0 %}
+                  <ul class="mb-0 small">
+                    {% for it in o["items"] %}
+                      <li>{{ it.product_name }} × {{ it.qty }}</li>
+                    {% endfor %}
+                  </ul>
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+
+              <!-- CHANGE: total ítems = suma de qty -->
+              <td>
+                {% set total_qty = 0 %}
+                {% for it in o["items"] %}{% set total_qty = total_qty + (it.qty or 0) %}{% endfor %}
+                {{ total_qty }}
+              </td>
+
+              <td>${{ '%.2f'|format(o.amount or 0) }}</td>
               <td>{{ o.payer_name or '-' }}</td>
-              <td>{{ o.phone or '-' }}</td>
+
               <td>
                 <button class="btn btn-success btn-sm" onclick="dispatchOrder({{ o.id }})">
                   <i class="fas fa-check"></i> Despachar
@@ -54,51 +73,74 @@
     </div>
   </div>
 
-  <!-- Despachadas -->
+    <!-- Pendientes -->
   <div class="card shadow mb-4">
     <div class="card-header d-flex align-items-center justify-content-between">
-      <h5 class="mb-0">Órdenes despachadas</h5>
-      <button class="btn btn-outline-primary btn-sm" onclick="reloadDispatched()">Recargar</button>
+      <h5 class="mb-0">Órdenes / Pagos reportados</h5>
+      <button class="btn btn-outline-primary btn-sm" onclick="reloadPending()">Recargar</button>
     </div>
     <div class="card-body">
       <div class="table-responsive">
+        <!-- CHANGE: columnas actualizadas a multi-ítem -->
         <table class="table table-sm table-striped">
           <thead>
             <tr>
               <th>ID</th>
               <th>Fecha</th>
-              <th>Producto</th>
-              <th>Cant.</th>
-              <th>Abono</th>
+              <th>Productos</th>      <!-- CHANGE: antes 1 producto; ahora lista -->
+              <th>Ítems</th>          <!-- CHANGE: suma de qty -->
               <th>Monto</th>
-              <th>Cliente</th>
-              <th>Teléfono</th>
-              <th>Despachado</th>
+              <th>Cliente</th>        <!-- mantenemos -->
+              <th style="width:120px;">Acción</th>
             </tr>
           </thead>
-          <tbody id="dispatched-body">
-            {% for o in dispatched %}
+          <tbody id="orders-body">
+            {# RENDER INICIAL (server-side) #}
+            {% for o in orders %}
             <tr data-row-id="{{ o.id }}">
               <td>#{{ o.id }}</td>
-              <td>{{ o.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
-              <td>{{ o.product_name }}</td>
-              <td>{{ o.qty }}</td>
-              <td>{{ '50%' if o.amount_type == '50' else '100%' }}</td>
-              <td>${{ '%.2f'|format(o.amount) }}</td>
+              <!-- CHANGE: created_at es ISO string del backend → no usar strftime aquí -->
+              <td>{{ o.created_at or '-' }}</td>
+
+              <!-- CHANGE: lista de productos con qty -->
+              <td>
+                {% if o["items"] and o["items"]|length > 0 %}
+                  <ul class="mb-0 small">
+                    {% for it in o["items"] %}
+                      <li>{{ it.product_name }} × {{ it.qty }}</li>
+                    {% endfor %}
+                  </ul>
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+
+              <!-- CHANGE: total ítems = suma de qty -->
+              <td>
+                {% set total_qty = 0 %}
+                {% for it in o["items"] %}{% set total_qty = total_qty + (it.qty or 0) %}{% endfor %}
+                {{ total_qty }}
+              </td>
+
+              <td>${{ '%.2f'|format(o.amount or 0) }}</td>
               <td>{{ o.payer_name or '-' }}</td>
-              <td>{{ o.phone or '-' }}</td>
-              <td>{{ o.dispatched_at.strftime('%Y-%m-%d %H:%M') if o.dispatched_at else '-' }}</td>
+
+              <td>
+                <button class="btn btn-success btn-sm" onclick="dispatchOrder({{ o.id }})">
+                  <i class="fas fa-check"></i> Despachar
+                </button>
+              </td>
             </tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
-      <small class="text-muted">Histórico de órdenes ya despachadas.</small>
+      <small class="text-muted">Se actualiza automáticamente cuando un cliente reporta pago.</small>
     </div>
   </div>
-</div>
 
-<script>
+  <script>
+// === Utils ===
 function formatLocal(dtIso){
   if (!dtIso) return "-";
   const d = new Date(dtIso);
@@ -107,8 +149,27 @@ function formatLocal(dtIso){
     hour: "2-digit", minute: "2-digit", hour12: false
   }).format(d).replace(',', '');
 }
-function money(n){ return "$" + Number(n).toFixed(2); }
+function money(n){ return "$" + Number(n || 0).toFixed(2); }
 
+// === Helpers de render de items ===
+// CHANGE: construye la lista HTML de productos × qty
+function renderProductsList(items){
+  if (!Array.isArray(items) || !items.length) return "-";
+  const lis = items.map(it => `<li>${escapeHtml(it.product_name)} × ${Number(it.qty||0)}</li>`).join("");
+  return `<ul class="mb-0 small">${lis}</ul>`;
+}
+function sumQty(items){
+  if (!Array.isArray(items)) return 0;
+  return items.reduce((acc, it) => acc + Number(it.qty || 0), 0);
+}
+function escapeHtml(s){
+  return String(s ?? "")
+    .replaceAll("&","&amp;").replaceAll("<","&lt;")
+    .replaceAll(">","&gt;").replaceAll('"',"&quot;")
+    .replaceAll("'","&#39;");
+}
+
+// === Recargas ===
 async function reloadPending(){
   const r = await fetch("/admin/orders/list.json", { cache: "no-store" });
   const data = await r.json();
@@ -117,12 +178,10 @@ async function reloadPending(){
     <tr data-row-id="${o.id}">
       <td>#${o.id}</td>
       <td>${formatLocal(o.created_at)}</td>
-      <td>${o.product_name}</td>
-      <td>${o.qty}</td>
-      <td>${o.amount_type === "50" ? "50%" : "100%"}</td>
+      <td>${renderProductsList(o.items)}</td>
+      <td>${sumQty(o.items)}</td>
       <td>${money(o.amount)}</td>
-      <td>${o.payer_name || "-"}</td>
-      <td>${o.phone || "-"}</td>
+      <td>${escapeHtml(o.payer_name || "-")}</td>
       <td>
         <button class="btn btn-success btn-sm" onclick="dispatchOrder(${o.id})">
           <i class="fas fa-check"></i> Despachar
@@ -140,12 +199,10 @@ async function reloadDispatched(){
     <tr data-row-id="${o.id}">
       <td>#${o.id}</td>
       <td>${formatLocal(o.created_at)}</td>
-      <td>${o.product_name}</td>
-      <td>${o.qty}</td>
-      <td>${o.amount_type === "50" ? "50%" : "100%"}</td>
+      <td>${renderProductsList(o.items)}</td>
+      <td>${sumQty(o.items)}</td>
       <td>${money(o.amount)}</td>
-      <td>${o.payer_name || "-"}</td>
-      <td>${o.phone || "-"}</td>
+      <td>${escapeHtml(o.payer_name || "-")}</td>
       <td>${formatLocal(o.dispatched_at)}</td>
     </tr>
   `).join("");
@@ -169,10 +226,10 @@ async function dispatchOrder(id){
 
 function reloadAll(){ reloadPending(); reloadDispatched(); }
 
+// === WebSocket en vivo ===
 document.addEventListener("DOMContentLoaded", () => {
   reloadAll();
 
-  // WebSocket en vivo (si ya lo tienes montado en /ws/public)
   if (window.__pubWS) { try { window.__pubWS.close(); } catch(_){} }
   const proto = (location.protocol === "https:") ? "wss" : "ws";
   const ws = new WebSocket(`${proto}://${location.host}/ws/public`);
@@ -189,7 +246,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }catch(e){ console.warn(e); }
   };
-
   window.addEventListener("beforeunload", () => { try { ws.close(); } catch(_){} });
 });
 </script>
