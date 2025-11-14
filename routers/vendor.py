@@ -201,6 +201,12 @@ async def brand_save(
     session: Session = Depends(get_session),
     display_name: str = Form(...),
     logo: UploadFile | None = File(None),
+
+    tagline: str | None = Form(None),        
+    whatsapp: str | None = Form(None),       
+    instagram: str | None = Form(None),      
+    location: str | None = Form(None),       
+    slug: str | None = Form(None),           
 ):
     owner_id = _current_owner_id(request)
     branding = session.exec(
@@ -210,18 +216,41 @@ async def brand_save(
     if not branding:
         # crea si no existe
         user = session.exec(select(User).where(User.id == owner_id)).first()
-        slug = user.slug if user and user.slug else f"tienda-{owner_id}"
+        base_slug = (user.slug if user and user.slug else f"tienda-{owner_id}")
         branding = VendorBranding(
-            owner_id=owner_id, slug=user.slug, display_name=display_name, settings={}
+            owner_id=owner_id,
+            slug=_unique_slug(session, base_slug),  # CHG: usa helper de slug único
+            display_name=display_name.strip(),
+            settings=deepcopy(DEFAULT_BRANDING_SETTINGS),  # CHG: arranca con defaults
         )
-    
-        session.add(branding); 
-        session.commit(); 
+        session.add(branding)
+        session.commit()
         session.refresh(branding)
 
-     # Actualiza nombre
+    # CHG: Normaliza/asegura el dict de settings (evita None o tipos raros)
+    settings = ensure_settings_dict(branding.settings)
+
+     # Actualiza nombre visible
     branding.display_name = display_name.strip()
     branding.updated_at = datetime.utcnow()
+
+    # CHG: Si el usuario propuso cambiar el slug, lo normalizamos y garantizamos unicidad
+    if slug is not None:
+        wanted = _slugify(slug)  # limpia: minúsculas, ascii, guiones
+        if wanted and wanted != branding.slug:
+            branding.slug = _unique_slug(session, wanted)  # no colisiona con otros VendorBranding
+
+    # CHG: Guardar tagline / whatsapp / instagram / location en settings
+    #      (el HTML usa 'tagline', 'whatsapp', 'instagram', 'location')
+    #      Si quieres permitir borrar (string vacío), guardamos tal cual lo que venga.
+    if tagline is not None:
+        settings["tagline"] = tagline.strip()
+    if whatsapp is not None:
+        settings["whatsapp"] = norm_whatsapp(whatsapp) if whatsapp.strip() else ""  # normaliza o limpia
+    if instagram is not None:
+        settings["instagram"] = norm_instagram(instagram) if instagram.strip() else ""
+    if location is not None:
+        settings["location"] = location.strip()
 
     if logo and getattr(logo, "filename", ""):
         content = await logo.read()
@@ -229,9 +258,10 @@ async def brand_save(
             raise HTTPException(status_code=400, detail="Logo vacío")
         # Guarda en volumen y persiste la URL pública en settings.logo_url
         public_url = save_vendor_bytes(branding.slug, content, logo.filename)
-        settings = ensure_settings_dict(branding.settings)
         settings["logo_url"] = public_url
-        branding.settings = settings
+    
+    # CHG: Persistimos los settings actualizados
+    branding.settings = settings
 
     session.add(branding); 
     session.commit(); 
