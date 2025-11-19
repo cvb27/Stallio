@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request, Depends, Form, UploadFile, File, HTTPException
 from fastapi.responses import RedirectResponse, HTMLResponse
-from fastapi.templating import Jinja2Templates
+from templates_engine import templates
 from sqlmodel import Session, select
 from models import Product, User
 from notify import ws_manager
@@ -10,7 +10,6 @@ import os, json
 from datetime import timezone  # si no usas _iso(), puedes eliminar esta import
 
 router = APIRouter(prefix="/admin/products", tags=["Admin Products"])
-templates = Jinja2Templates(directory="templates")
 
 # Imagen por defecto para tarjetas sin foto
 DEFAULT_IMAGE_URL = "/static/img/product_placeholder.png"

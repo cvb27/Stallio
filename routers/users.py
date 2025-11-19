@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request, Depends, HTTPException, Form
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
-from fastapi.templating import Jinja2Templates
+from templates_engine import templates
 from sqlmodel import Session, select, delete
 from db import get_session
 from models import User, Product, PaymentReport, DispatchedOrder
@@ -8,8 +8,6 @@ from starlette.status import HTTP_302_FOUND
 from sqlalchemy import or_, func
 
 router = APIRouter(prefix="/admin/users", tags=["Admin Users"])
-templates = Jinja2Templates(directory="templates")
-
 
 # ========== ADMIN: gestión de usuarios ==========
 def _require_admin(request: Request):

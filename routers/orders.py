@@ -10,7 +10,7 @@
 # ------------------------------------------------------------
 
 from fastapi import APIRouter, Request, Depends, HTTPException, BackgroundTasks
-from fastapi.templating import Jinja2Templates
+from templates_engine import templates
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlmodel import Session, select
 from models import PaymentReport, Product, DispatchedOrder, User, Order, OrderItem
@@ -29,7 +29,6 @@ from utils.helpers import (
 )
 
 router = APIRouter(prefix="/admin", tags=["Admin Orders"])
-templates = Jinja2Templates(directory="templates")
 
 # =========================
 # Landing de /admin/orders

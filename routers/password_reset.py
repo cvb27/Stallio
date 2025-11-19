@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request, Depends, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
+from templates_engine import templates
 from sqlmodel import Session, select
 from email_validator import validate_email, EmailNotValidError
 
@@ -13,8 +13,6 @@ from services.emailer import send_email
 from config import SECRET_KEY, PASSWORD_RESET_TOKEN_MAX_AGE, APP_BASE_URL
 
 router = APIRouter(prefix="/auth", tags=["Password Reset"])
-templates = Jinja2Templates(directory="templates")
-
 
 # --- 1) Ask for email ---
 @router.get("/forgot", response_class=HTMLResponse)

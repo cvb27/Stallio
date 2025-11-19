@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Request, HTTPException, Depends
-from fastapi.templating import Jinja2Templates
+from templates_engine import templates
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlmodel import Session, select
 from models import User
@@ -8,7 +8,6 @@ import os
 from urllib.parse import quote
 
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")
 
 def _env(key: str, default: str) -> str:
     return os.getenv(key, default).strip()

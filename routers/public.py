@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Request, Form, Depends, WebSocket, WebSocketDisconnect, HTTPException
-from fastapi.templating import Jinja2Templates
+from templates_engine import templates
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse, JSONResponse
 from sse_starlette.sse import EventSourceResponse
 from sqlmodel import Session, select
@@ -14,7 +14,6 @@ import secrets, asyncio, json
 DEFAULT_IMAGE_URL = "/static/img/product_placeholder.png"
 
 router = APIRouter(prefix="", tags=["Public"])
-templates = Jinja2Templates(directory="templates")
 
 def _get_user_by_slug(session: Session, slug: str) -> User:
     user = session.exec(select(User).where(User.slug == slug)).first()
@@ -333,3 +332,4 @@ def cart_modal_action(
     request.session["cart"] = []
 
     return RedirectResponse(f"/u/{slug}?ok=order_reported", status_code=303)
+

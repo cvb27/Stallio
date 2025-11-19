@@ -4,14 +4,12 @@ from fastapi import APIRouter, Request, Depends, Form
 from fastapi.responses import RedirectResponse, HTMLResponse
 from sqlmodel import Session, select
 from typing import List, Dict
-from fastapi.templating import Jinja2Templates
-
+from templates_engine import templates
 from db import get_session
 from models import Product, Order, OrderItem, PaymentReport  # asumiendo que ya existe  /  ver sección C
 from utils.cart import add_item, set_qty, remove_item, clear as cart_clear
 
 router = APIRouter(tags=["Cart"])
-templates = Jinja2Templates(directory="templates")
 
 # --------- Vistas de carrito ---------
 

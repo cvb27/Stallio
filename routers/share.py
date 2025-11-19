@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
-from fastapi.templating import Jinja2Templates
+from templates_engine import templates
 from sqlmodel import Session
 from db import get_session
 from models import User
@@ -8,7 +8,6 @@ from urllib.parse import quote
 import io
 
 router = APIRouter(prefix="/admin/share", tags=["Admin Share"])
-templates = Jinja2Templates(directory="templates")
 
 def _require_vendor(request: Request) -> int:
     if "user_id" not in request.session:

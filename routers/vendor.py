@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request, Depends, HTTPException, File, UploadFile, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
+from templates_engine import templates
 from sqlmodel import Session, select
 from db import get_session
 
@@ -16,7 +16,6 @@ import logging
 log = logging.getLogger("uvicorn.error")  # usa el logger de Uvicorn
 
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")
 
 # ---------------------------
 # Helpers de sesión/seguridad

@@ -16,20 +16,32 @@
             
             <tr>
               <th>ID</th>
-              <th>Correo</th>
-              <th>Nombre</th>
+              <th>Email</th>
+              <th>Name</th>
+              <th>Public page</th>
               <th>Rol</th>
               <th>Activo</th>
-              <th>Creado</th>
+              <th>Created</th>
+              
               <th style="width: 160px;">Acción</th>
             </tr>
           </thead>
           <tbody>
             {% for u in users %}
+              {% set row = rows[loop.index0] %}
             <tr>
               <td>#{{ u.id }}</td>
               <td class="text-monospace">{{ u.email }}</td>
               <td>{{ u.name or '-' }}</td>
+              <td>
+            {% if row.public_url %}
+              <a href="{{ row.public_url }}" target="_blank">
+            {{ row.public_url }}
+              </a>
+            {% else %}
+              <span class="text-muted small">No page</span>
+            {% endif %}
+            </td>
               <td>{{ u.role }}</td>
               <td>
                 {% if u.is_active %}

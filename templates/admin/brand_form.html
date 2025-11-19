@@ -1,18 +1,18 @@
 {% extends "admin/layout.html" %}
-{% block title %}Editar mi página{% endblock %}
+
 
 {% block content %}
 <div class="container-fluid px-4">
   <div class="d-flex align-items-center justify-content-between mb-4">
-    <h1 class="h4 mb-0">Editar mi página</h1>
+    <h1 class="h4 mb-0">{{ t("brand.edit_title", locale) }}</h1>
     <div class="d-flex gap-2">
-      <a class="btn btn-outline-secondary btn-sm" target="_blank" href="/u/{{ branding.slug }}">Ver página pública</a>
-      <button class="btn btn-primary btn-sm" id="btnCopy">Copiar URL</button>
+      <a class="btn btn-outline-secondary btn-sm" target="_blank" href="/u/{{ branding.slug }}">View public page</a>
+      <button class="btn btn-primary btn-sm" id="btnCopy">Copy URL</button>
     </div>
   </div>
 
   {% if request.query_params.get("ok") %}
-    <div class="alert alert-success">Cambios guardados correctamente.</div>
+    <div class="alert alert-success">Changes saved successfully.</div>
   {% endif %}
   {% if request.query_params.get("err") %}
     <div class="alert alert-danger">{{ request.query_params.get("err") }}</div>
@@ -22,62 +22,62 @@
     <div class="col-lg-8">
       <div class="card shadow mb-4">
         <div class="card-header py-3">
-          <h6 class="m-0 font-weight-bold text-primary">Datos básicos</h6>
+          <h6 class="m-0 font-weight-bold text-primary">Basic Data</h6>
         </div>
         <div class="card-body">
           <form method="post" enctype="multipart/form-data" id="brandForm">
             <input type="hidden" name="branding_id" value="{{ branding.id if branding else '' }}">
             <div class="mb-3">
-              <label class="form-label">Nombre que aparece en la página</label>
+              <label class="form-label">Name that appears on the page</label>
               <input class="form-control" type="text" name="display_name" value="{{ branding.display_name }}" maxlength="60" required>
             </div>
             <div class="mb-3">
-              <label class="form-label">Eslogan (Opcional)</label>
+              <label class="form-label">Slogan (Optional)</label>
               <input class="form-control" type="text" name="tagline"
                      value="{{ branding.settings.tagline if branding and branding.settings else '' }}"
                      maxlength="120" placeholder="La mejor selección para ti">
-              <small class="text-muted">Texto breve que aparece bajo el título del Home.</small>
+              <small class="text-muted">Short text that appears under the Home title</small>
             </div>
             <div class="mb-3">
-              <label class="form-label">WhatsApp (Opcional)</label>
+              <label class="form-label">WhatsApp (Optional)</label>
               <input class="form-control" type="tel" name="whatsapp"
                      value="{{ branding.settings.whatsapp if branding and branding.settings else '' }}"
                      placeholder="+1 555 555 5555">
-              <small class="text-muted">Se usará para abrir un chat en WhatsApp y puedan escribirte un mensaje..</small>
+              <small class="text-muted">It will be used to open a chat in WhatsApp so they can write you a message</small>
             </div>
             <div class="mb-3">
-              <label class="form-label">Instagram (Opcional)</label>
+              <label class="form-label">Instagram (Optional)</label>
               <input class="form-control" type="text" name="instagram"
                      value="{{ branding.settings.instagram if branding and branding.settings else '' }}"
                      placeholder="@mi_cuenta o https://instagram.com/mi_cuenta">
-              <small class="text-muted">Puedes pegar la URL completa de tu cuenta o solo el usuario (con o sin @).</small>
+              <small class="text-muted">You can paste the full URL of your account or just the username (with or without @)</small>
             </div>
             <div class="mb-3">
-              <label class="form-label">Ubicación (Opcional)</label>
+              <label class="form-label">Location (Optional)</label>
                 <input type="text" name="location" class="form-control"
                        placeholder="Ciudad, dirección…"
                        value="{{ branding.settings.location if branding and branding.settings else '' }}">
-            <small class="text-muted">Visible en el pie de página. Ej.: “Orlando, FL”</small>
+            <small class="text-muted">Visible in the footer. Ej.: “Orlando, FL”</small>
             </div>
             <div class="mb-3">
-              <label class="form-label">Slug (Opcional) (URL corta)</label>
+              <label class="form-label">Slug (Optional) (short URL )</label>
               <div class="input-group">
                 <span class="input-group-text">/u/</span>
                 <input class="form-control" type="text" name="slug" id="slug"
                        value="{{ branding.slug }}" pattern="^[a-z0-9-]{3,}$" aria-describedby="slugHelp">
               </div>
               <small id="slugHelp" class="form-text text-muted">
-                Solo minúsculas, números y guiones. Ej: <code>mi-tienda</code>
+                Only lowercase letters, numbers, and hyphens. Ej: <code>my-store</code>
               </small>
             </div>
             
             <div class="mb-3">
-              <label class="form-label">Logo (PNG/JPG/WEBP) (Opcional)</label>
+              <label class="form-label">Logo (PNG/JPG/WEBP) (Optional)</label>
               <input class="form-control" type="file" name="logo" accept=".png,.jpg,.jpeg,.webp">
             </div>
 
             <div class="d-grid">
-              <button class="btn btn-primary" type="submit">Guardar</button>
+              <button class="btn btn-primary" type="submit">Save</button>
             </div>
           </form>
         </div>
@@ -87,7 +87,7 @@
     <div class="col-lg-4">
       <div class="card shadow mb-4">
         <div class="card-header py-3">
-          <h6 class="m-0 font-weight-bold text-primary">Vista rápida</h6>
+          <h6 class="m-0 font-weight-bold text-primary">Quick view</h6>
         </div>
         <div class="card-body">
           <div class="d-flex align-items-center gap-3">
@@ -99,7 +99,7 @@
             <strong id="liveName">{{ branding.display_name }}</strong>
           </div>
           <div class="mt-3 small text-muted">
-            URL pública:
+            public URL:
             <a href="/u/{{ branding.slug }}" target="_blank">/u/{{ branding.slug }}</a>
           </div>
         </div>

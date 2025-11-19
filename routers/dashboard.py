@@ -1,6 +1,6 @@
 
 from fastapi import APIRouter, Request, Depends, HTTPException, BackgroundTasks
-from fastapi.templating import Jinja2Templates
+from templates_engine import templates
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlmodel import Session, select
 from models import PaymentReport, Product, DispatchedOrder
@@ -9,8 +9,6 @@ from db import get_session
 import asyncio, json
 
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")
-
 
 # HELPERS #
 

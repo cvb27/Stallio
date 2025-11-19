@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Request, Form, Depends, HTTPException
-from fastapi.templating import Jinja2Templates
+from templates_engine import templates
 from fastapi.responses import HTMLResponse, RedirectResponse
 from config import ADMIN_EMAIL, ADMIN_PASSWORD, BASE_URL, RESET_TOKEN_TTL_MIN
 from sqlmodel import Session, select
@@ -15,7 +15,7 @@ import re, secrets, hashlib
 
 
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")
+
 
 
 def _slugify(s: str) -> str:
@@ -110,7 +110,7 @@ async def login(
         request.session.clear()   # ← limpia cualquier rastro de vendor
         request.session["admin_email"] = email          # ← sesión creada
         request.session["user_name"] = "Administrador"  # Muestra el nombre de user en el layout.
-        return RedirectResponse("/admin/users", status_code=HTTP_303_SEE_OTHER)
+        return RedirectResponse("/master/users", status_code=HTTP_303_SEE_OTHER)
     
     # 2) Busca usuario vendor/admin en BD
     user = session.exec(select(User).where(User.email == email)).first()
