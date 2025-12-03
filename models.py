@@ -133,3 +133,28 @@ class PaymentReport(SQLModel, table=True):
     reference: str
     amount: float
     notes: str = ""
+
+class Review(SQLModel, table=True):
+    """
+    Review de un vendor.
+    Almacenamos solo lo básico:
+    - vendor_id: a qué vendor pertenece
+    - name: nombre del cliente
+    - rating: 1 a 5
+    - comment: texto de la reseña
+    - is_approved: visible públicamente o no
+    - created_at: cuándo se creó
+    """
+    id: Optional[int] = Field(default=None, primary_key=True)
+
+    vendor_id: int = Field(index=True)
+    name: str = Field(max_length=80)
+    rating: int = Field(ge=1, le=5)
+    comment: str = Field(max_length=1000)
+
+    is_approved: bool = Field(default=False, index=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    # Opcional: fuente externa
+    source: Optional[str] = Field(default=None, max_length=50)  # "internal", "google", "instagram", etc.
+    source_url: Optional[str] = Field(default=None, max_length=255)

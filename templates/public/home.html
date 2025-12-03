@@ -256,9 +256,130 @@
           </button>
         </div>
       </form>
+
+
+      
+    </div>
+
+
+    
+  </div>
+
+  
+</div>
+{# =========================
+   REVIEWS BLOCK (public)
+   ========================= #}
+<section class="page-section reviews-section" id="reviews">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-8 col-xl-7">
+        <div class="card reviews-card shadow-sm border-0 rounded-3">
+          <div class="card-body p-4 p-md-5">
+
+            {# --- resumen de rating --- #}
+            {% set total_reviews = reviews_count if reviews_count is defined else 0 %}
+            {% set avg_score = avg_rating if avg_rating is defined else 0 %}
+
+            <div class="d-flex justify-content-between align-items-baseline mb-3">
+              <div>
+                <h5 class="mb-1">Customer reviews</h5>
+                {% if total_reviews > 0 %}
+                  <small class="text-muted">
+                    {{ avg_score }}/5 · {{ total_reviews }} review{{ total_reviews != 1 and 's' or '' }}
+                  </small>
+                {% else %}
+                  <small class="text-muted">No reviews yet. Be the first to leave one!</small>
+                {% endif %}
+              </div>
+
+              {% if total_reviews > 0 %}
+              <div class="text-end small reviews-stars">
+                {% for i in range(1, 6) %}
+                  {% if i <= avg_score|round(0, 'floor') %}
+                    ★
+                  {% else %}
+                    ☆
+                  {% endif %}
+                {% endfor %}
+              </div>
+              {% endif %}
+            </div>
+
+            {# --- listado de reviews --- #}
+            {% if total_reviews > 0 %}
+              <ul class="list-unstyled mb-4">
+                {% for r in reviews %}
+                  <li class="review-item">
+                    <div class="d-flex justify-content-between">
+                      <div>
+                        <strong class="d-block">{{ r.name }}</strong>
+                        <small class="text-muted d-block">
+                          {{ r.created_at.strftime('%Y-%m-%d') }}
+                        </small>
+                      </div>
+                      <div class="text-warning small reviews-stars">
+                        {% for i in range(1, 6) %}
+                          {% if i <= r.rating %}
+                            ★
+                          {% else %}
+                            ☆
+                          {% endif %}
+                        {% endfor %}
+                      </div>
+                    </div>
+                    <p class="mb-0 mt-2 small text-secondary">{{ r.comment }}</p>
+                  </li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+
+            <hr class="my-4">
+
+            {# --- formulario para dejar review --- #}
+            <h6 class="mb-3">Leave a review</h6>
+            <form method="post" action="/u/{{ branding.slug }}/review" class="reviews-form">
+              <div class="mb-2">
+                <label class="form-label small mb-1">Your name</label>
+                <input type="text" name="name" class="form-control form-control-sm" placeholder="John Doe">
+              </div>
+
+              <div class="mb-2">
+                <label class="form-label small mb-1">Rating</label>
+                <select name="rating" class="form-select form-select-sm" required>
+                  <option value="">Select...</option>
+                  <option value="5">★★★★★ (5)</option>
+                  <option value="4">★★★★☆ (4)</option>
+                  <option value="3">★★★☆☆ (3)</option>
+                  <option value="2">★★☆☆☆ (2)</option>
+                  <option value="1">★☆☆☆☆ (1)</option>
+                </select>
+              </div>
+
+              <div class="mb-2">
+                <label class="form-label small mb-1">Comment</label>
+                <textarea name="comment" class="form-control form-control-sm" rows="3" required></textarea>
+              </div>
+
+              {# Honeypot, oculto para humanos #}
+              <div style="display:none;">
+                <label>Website</label>
+                <input type="text" name="website">
+              </div>
+
+              <button class="btn btn-sm btn-primary mt-2" type="submit">
+                Submit review
+              </button>
+            </form>
+
+          </div>
+        </div>
+      </div>
     </div>
   </div>
-</div>
+</section>
+
+
 
 {# ====================== JS (idéntico, solo pequeños ajustes de clases BS5) ====================== #}
 <script>
@@ -535,6 +656,38 @@ async function loadProducts(){
   transform:translateY(-2px);
   background: color-mix(in oklab, var(--brand-accent) 20%, black);
   border-color: var(--brand-accent);
+}
+
+.reviews-section{
+  padding: 3rem 0 4rem;
+  background-color: #f9fafb; /* gris muy suave de fondo para separar el bloque */
+}
+
+.reviews-card{
+  background-color: #ffffff;
+}
+
+.review-item{
+  padding: .75rem 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.review-item:last-child{
+  border-bottom: none;
+}
+
+.reviews-stars{
+  letter-spacing: .08em;
+  color: #fbbf24; /* amarillo suave (similar a amber-400) */
+}
+
+.reviews-form .form-control,
+.reviews-form .form-select{
+  font-size: .875rem;
+}
+
+.reviews-form label.form-label{
+  font-weight: 500;
 }
 </style>
 

@@ -1,0 +1,70 @@
+{% extends "admin/layout.html" %}
+{% block title %}Reviews - {{ vendor.name or vendor.email }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <h1 class="h4 mb-0">Customer reviews</h1>
+    <a class="btn btn-outline-secondary btn-sm" href="/admin/{{ vendor.slug }}/dashboard">
+      Back to dashboard
+    </a>
+  </div>
+
+  <div class="card shadow">
+    <div class="card-body">
+      {% if reviews %}
+        <div class="table-responsive">
+          <table class="table table-sm table-striped align-middle">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Rating</th>
+                <th>Comment</th>
+                <th>Created</th>
+                <th>Approved</th>
+                <th style="width: 150px;">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in reviews %}
+                <tr>
+                  <td>#{{ r.id }}</td>
+                  <td>{{ r.name }}</td>
+                  <td>{{ r.rating }}/5</td>
+                  <td class="small">{{ r.comment }}</td>
+                  <td>{{ r.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                  <td>
+                    {% if r.is_approved %}
+                      <span class="badge bg-success">Yes</span>
+                    {% else %}
+                      <span class="badge bg-secondary">No</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if r.is_approved %}
+                      <form method="post" action="/admin/{{ vendor.slug }}/reviews/{{ r.id }}/hide" style="display:inline;">
+                        <button class="btn btn-sm btn-outline-warning" onclick="return confirm('Hide this review?');">
+                          Hide
+                        </button>
+                      </form>
+                    {% else %}
+                      <form method="post" action="/admin/{{ vendor.slug }}/reviews/{{ r.id }}/approve" style="display:inline;">
+                        <button class="btn btn-sm btn-outline-success" onclick="return confirm('Approve this review?');">
+                          Approve
+                        </button>
+                      </form>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="text-muted mb-0">No reviews yet.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

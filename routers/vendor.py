@@ -4,7 +4,8 @@ from templates_engine import templates
 from sqlmodel import Session, select
 from db import get_session
 
-from models import User, Product, PaymentReport, VendorBranding, DEFAULT_BRANDING_SETTINGS, Order, OrderItem
+from models import User, Product, PaymentReport, VendorBranding, DEFAULT_BRANDING_SETTINGS, Order, OrderItem, Review
+from utils.reviews import compute_avg_rating
 
 from typing import Optional
 from copy import deepcopy
@@ -13,6 +14,7 @@ from routers.store_helpers import resolve_store, get_branding_by_owner, ensure_s
 from storage_local import save_vendor_bytes
 import re, unicodedata
 import logging
+
 log = logging.getLogger("uvicorn.error")  # usa el logger de Uvicorn
 
 router = APIRouter()
@@ -64,20 +66,47 @@ def _unique_slug(session: Session, wanted: str) -> str:
 # --------------------------------------------
 
 @router.get("/vendor/home", response_class=HTMLResponse)
-async def vendor_home(request: Request, session: Session = Depends(get_session)):
+async def vendor_home(
+    request: Request, 
+    session: Session = Depends(get_session)):
+
+    """
+    Vista de preview del vendor usando el mismo template público.
+    CHG:
+    - Ahora también carga reviews aprobadas,
+      el promedio y el conteo, igual que /u/{slug}.
+    """
+
     owner_id = request.session.get("user_id")
     if not owner_id:
         raise HTTPException(status_code=401, detail="No autenticado")
+    
     user = session.exec(select(User).where(User.id == owner_id)).first()
     branding = get_branding_by_owner(session, owner_id)
     products = session.exec(select(Product).where(Product.owner_id == owner_id)).all()
     theme = build_theme(branding)
+
+    # CHG: reviews aprobadas del vendor (preview ve lo mismo que el público)
+    reviews = session.exec(
+        select(Review)
+        .where(Review.vendor_id == user.id)
+        .where(Review.is_approved == True)
+        .order_by(Review.created_at.desc())
+        .limit(20)
+    ).all()
+
+    avg_rating = compute_avg_rating(reviews)
+    reviews_count = len(reviews)
+
     return templates.TemplateResponse("public/home.html", {
         "request": request,
         "branding": branding,
         "vendor": user,
         "products": products,
         "theme": theme,
+        "reviews": reviews,               # CHG
+        "avg_rating": avg_rating,         # CHG
+        "reviews_count": reviews_count,   # CHG
     })
 
 # ----------------
@@ -144,16 +173,51 @@ def public_store(
     slug: str, 
     request: Request, 
     session: Session = Depends(get_session)):
+
+    """
+    Página pública del vendor.
+    Carga:
+    - vendor (User)
+    - branding
+    - products
+    - reviews aprobadas
+    - promedio de rating
+    """
+
+    # 1) Resolver vendor y branding a partir del slug público
     user, branding = resolve_store(session, slug)
 
-    products = session.exec(select(Product).where(Product.owner_id == user.id)).all()
+     # 2) Productos del vendor
+    products = session.exec(
+        select(Product).where(Product.owner_id == user.id)
+        ).all()
+    
     theme = build_theme(branding)
+
+    # 3) Reviews aprobadas del vendor
+    reviews = session.exec(
+        select(Review)
+        .where(Review.vendor_id == user.id)
+        .where(Review.is_approved == True)
+        .order_by(Review.created_at.desc())
+        .limit(20)
+    ).all()
+
+    avg_rating = compute_avg_rating(reviews)
+    reviews_count = len(reviews)
+
+    # LOG opcional para ver el conteo en consola
+    log.info(f"[public_store] slug={slug} vendor_id={user.id} reviews_count={reviews_count}")
+
     return templates.TemplateResponse("public/home.html", {
         "request": request,
         "branding": branding,
         "vendor": user,
         "products": products,
         "theme": theme,
+        "reviews": reviews,
+        "avg_rating": avg_rating,
+        "reviews_count": reviews_count,
         
     })
 
@@ -267,3 +331,129 @@ async def brand_save(
     session.refresh(branding)
     
     return RedirectResponse("/vendor/brand?ok=1", status_code=302)
+
+@router.post("/u/{slug}/review")
+async def public_create_review(
+    slug: str,
+    request: Request,
+    session: Session = Depends(get_session),
+    name: str = Form(...),
+    rating: int = Form(...),
+    comment: str = Form(...),
+    website: str = Form("", description="Honeypot field"),  # CHG: campo oculto anti-spam
+):
+    """
+    Crea una review pública para un vendor identificado por slug.
+    - No requiere login.
+    - Usa un campo 'website' como honeypot anti-spam (debe venir vacío).
+    - Por defecto, las reviews quedan is_approved=False (moderación).
+    """
+
+    # Honeypot simple: si 'website' viene relleno, asumimos bot y no guardamos nada.
+    if website:
+        # Opcional: redirigimos como si nada hubiera pasado, para no dar pistas al bot.
+        return RedirectResponse(f"/u/{slug}?review=ok", status_code=302)
+
+    # Resolver vendor a partir del slug
+    user, branding = resolve_store(session, slug)
+
+    # Validar rating
+    if rating < 1 or rating > 5:
+        raise HTTPException(status_code=400, detail="Invalid rating")
+
+    name = name.strip() or "Anonymous"
+    comment = comment.strip()
+    if not comment:
+        raise HTTPException(status_code=400, detail="Empty comment")
+
+    review = Review(
+        vendor_id=user.id,
+        name=name,
+        rating=rating,
+        comment=comment,
+        is_approved=False,   # moderación por defecto
+        source="internal",
+    )
+    session.add(review)
+    session.commit()
+
+    return RedirectResponse(f"/u/{slug}?review=ok", status_code=302)
+
+
+# Panel de reviews para el vendor
+
+@router.get("/admin/{slug}/reviews", response_class=HTMLResponse)
+def vendor_reviews_page(
+    slug: str,
+    request: Request,
+    session: Session = Depends(get_session),
+):
+    """
+    Lista las reviews de un vendor en su panel admin.
+    Solo el propio vendor puede verlas.
+    """
+    vendor = _require_vendor_own(request, session, slug)
+    if not vendor:
+        return RedirectResponse("/login", status_code=302)
+
+    reviews = session.exec(
+        select(Review)
+        .where(Review.vendor_id == vendor.id)
+        .order_by(Review.created_at.desc())
+    ).all()
+
+    return templates.TemplateResponse("admin/vendor_reviews.html", {
+        "request": request,
+        "vendor": vendor,
+        "reviews": reviews,
+    })
+
+
+@router.post("/admin/{slug}/reviews/{review_id}/approve")
+def vendor_review_approve(
+    slug: str,
+    review_id: int,
+    request: Request,
+    session: Session = Depends(get_session),
+):
+    """
+    Marca una review como aprobada (visible públicamente).
+    """
+    vendor = _require_vendor_own(request, session, slug)
+    if not vendor:
+        return RedirectResponse("/login", status_code=302)
+
+    review = session.get(Review, review_id)
+    if not review or review.vendor_id != vendor.id:
+        raise HTTPException(status_code=404, detail="Review not found")
+
+    review.is_approved = True
+    session.add(review)
+    session.commit()
+
+    return RedirectResponse(f"/admin/{slug}/reviews", status_code=302)
+
+
+@router.post("/admin/{slug}/reviews/{review_id}/hide")
+def vendor_review_hide(
+    slug: str,
+    review_id: int,
+    request: Request,
+    session: Session = Depends(get_session),
+):
+    """
+    Marca una review como no aprobada (oculta del público).
+    """
+    vendor = _require_vendor_own(request, session, slug)
+    if not vendor:
+        return RedirectResponse("/login", status_code=302)
+
+    review = session.get(Review, review_id)
+    if not review or review.vendor_id != vendor.id:
+        raise HTTPException(status_code=404, detail="Review not found")
+
+    review.is_approved = False
+    session.add(review)
+    session.commit()
+
+    return RedirectResponse(f"/admin/{slug}/reviews", status_code=302)

@@ -3,12 +3,13 @@ from templates_engine import templates
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse, JSONResponse
 from sse_starlette.sse import EventSourceResponse
 from sqlmodel import Session, select
-from models import Product, PaymentReport, User, VendorBranding, Order, OrderItem
+from models import Product, PaymentReport, User, VendorBranding, Order, OrderItem, Review
 from db import get_session
 from notify import ws_manager
 from sms import send_sms
 from config import PAYMENT_INFO, SELLER_MOBILE
 from routers.store_helpers import resolve_store, build_theme
+from utils.reviews import compute_avg_rating
 import secrets, asyncio, json
 
 DEFAULT_IMAGE_URL = "/static/img/product_placeholder.png"
@@ -47,15 +48,34 @@ async def public_home(request: Request, session: Session = Depends(get_session))
     
 
 @router.get("/u/{slug}")
-def public_store(slug: str, request: Request, session: Session = Depends(get_session)):
+def public_store(
+    slug: str, 
+    request: Request, 
+    session: Session = Depends(get_session)):
+
     user = _get_user_by_slug(session, slug)
     branding = session.exec(select(VendorBranding).where(VendorBranding.owner_id == user.id)).first()
     products = session.exec(select(Product).where(Product.owner_id == user.id)).all()
+
+    reviews = session.exec(
+        select(Review)
+        .where(Review.vendor_id == user.id)
+        .where(Review.is_approved == True)
+        .order_by(Review.created_at.desc())
+        .limit(20)
+    ).all()
+
+    avg_rating = compute_avg_rating(reviews)
+    reviews_count = len(reviews)
+
     return templates.TemplateResponse("public/home.html", {
         "request": request,
         "vendor": user,
         "branding": branding,
         "products": products,  # cada p.image_url ya es /uploads/...
+        "reviews": reviews,               # CHG
+        "avg_rating": avg_rating,         # CHG
+        "reviews_count": reviews_count,   # CHG
     })
 
 # JSON para la grilla pública del vendor
