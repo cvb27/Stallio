@@ -1,51 +1,99 @@
 import os
 from typing import Generator
-from sqlmodel import SQLModel, create_engine, Session
-from sqlalchemy import create_engine
-from sqlalchemy.engine.url import make_url
-from pydantic_settings import BaseSettings, SettingsConfigDict
 from pathlib import Path
 
+from sqlmodel import SQLModel, create_engine, Session
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.engine.url import make_url
 
-# Lee de entorno (ya cargado por main.py)
+
+# ============================================================
+# 1) Leer y normalizar DATABASE_URL
+# ============================================================
+
+# En Railway será algo tipo:
+# DATABASE_URL="postgresql+psycopg2://user:pass@host:port/db"
+# Por defecto en local usamos SQLite.
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./app.db")
 
-# Compatibilidad: postgres:// -> postgresql+psycopg2:// (por si algún día migras)
+# Compatibilidad: convertir postgres:// -> postgresql+psycopg2://
 if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg2://", 1)
-    
-# 2) Para SQLite: asegúrate de que existe el directorio del archivo
-connect_args = {}
+    DATABASE_URL = DATABASE_URL.replace(
+        "postgres://", "postgresql+psycopg2://", 1
+    )
+# Parseamos la URL para detectar tipo de motor (sqlite/postgres/etc.)
 url = make_url(DATABASE_URL)
+
+
+# ============================================================
+# 2) Ajustes especiales para SQLite
+# ============================================================
+
+connect_args = {}
 if url.drivername.startswith("sqlite"):
+    # Necesario para SQLite + threads (FastAPI)
     connect_args = {"check_same_thread": False}
-    if url.database:  # ruta del archivo
+
+    # Crear el directorio del archivo SQLite si no existe
+    if url.database:
         Path(url.database).parent.mkdir(parents=True, exist_ok=True)
-        
-# 3) Crea el engine UNA sola vez
+
+# ============================================================
+# 3) Crear el engine global
+# ============================================================
+# Crea el engine global que usará toda la app y Alembic
+
 engine = create_engine(
     DATABASE_URL,
-    echo=False,
-    pool_pre_ping=True,
+    echo=False,           # pon True si quieres ver el SQL en consola
+    pool_pre_ping=True,   # ayuda a evitar conexiones muertas
     connect_args=connect_args,
 )
 
-def get_session() -> Generator[Session, None, None]:
-    with Session(engine) as session:
+# Factory de sesiones (para usar en dependencias de FastAPI, scripts, etc.)
+SessionLocal = sessionmaker(
+    bind=engine,
+    class_=Session,
+    autoflush=False,
+    autocommit=False,
+    expire_on_commit=False,
+)
+
+# ============================================================
+# 4) Dependencia típica de FastAPI
+# ============================================================
+
+def get_session():
+    """
+    Dependencia típica de FastAPI.
+    Uso:
+
+    @router.get("/algo")
+    def algo(db: Session = Depends(get_session)):
+        ...
+    """
+    with SessionLocal() as session:
         yield session
 
-def init_db():
+# ============================================================
+# 5) Helper opcional para crear tablas sin Alembic
+#    (EN PRODUCCIÓN: usar SIEMPRE migraciones Alembic)
+# ============================================================
+
+def init_db() -> None:
     """
-    Crea las tablas si no existen. 
-    - En SQLite es útil en desarrollo.
-    - En PostgreSQL (Railway) no hace daño; si usas Alembic, puedes dejarla como 'pass'
-      o mantener create_all (no borra ni sobreescribe).
+    Crea las tablas a partir de los modelos de SQLModel.
+
+    ⚠️ IMPORTANTE:
+    - En producción, usa Alembic (migraciones) en lugar de esta función.
+    - Puedes usarla manualmente en desarrollo/local si quieres
+      levantar rápido una base nueva.
+
+    Ejemplo manual:
+
+        from models import *
+        from db import init_db
+        init_db()
     """
-    try:
-        # Si prefieres que en Postgres no haga nada y usar sólo Alembic:
-        # if not settings.DATABASE_URL.startswith("sqlite"):
-        #     return
-        SQLModel.metadata.create_all(engine)
-    except Exception as e:
-        # Evita tumbar el arranque si hay una race condition; puedes loguearlo si quieres
-        print(f"[init_db] warning: {e}")
+    import models # noqa: F401,F403  (asegura que se carguen todos los modelos)
+    SQLModel.metadata.create_all(bind=engine)

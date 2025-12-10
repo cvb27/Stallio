@@ -1,55 +1,83 @@
+from __future__ import annotations
+
+import sys
 import os
 from logging.config import fileConfig
-from sqlalchemy import engine_from_config, pool
-from alembic import context
 
-# 1) Para soportar SQLModel
+from alembic import context
+from sqlalchemy import engine_from_config, pool
 from sqlmodel import SQLModel
 
-# 2) Importa tus modelos para que queden registrados en SQLModel.metadata.
-#    Ajusta estas rutas a las que tengas en tu proyecto:
+# --------------------------------------------------------
+# IMPORTA EL ENGINE Y LOS MODELOS EXACTAMENTE COMO EN TU APP
+# --------------------------------------------------------
 
-from models import User, PaymentReport, PasswordReset, Product, VendorBranding, DispatchedOrder
+# Asegura que Alembic pueda importar tus módulos
+sys.path.append(os.path.abspath("."))  
 
 
-# this is the Alembic Config object, which provides
-# access to the values within the .ini file in use.
+# 🔹 Importa tu engine y tus modelos
+from db import engine  # <-- tu engine real
+import models  # <-- importa TODOS los modelos (importante)
+
+# --------------------------------------------------------
+# CONFIGURACIÓN BASE DE ALEMBIC
+# --------------------------------------------------------
+# Esta variable la usa Alembic internamente
+
 config = context.config
 
-# Interpret the config file for Python logging.
-# This line sets up loggers basically.
+# Configuración de logging (opcional pero recomendable)
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# add your model's MetaData object here
-# for 'autogenerate' support
-# from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
+# Target metadata = modelos de SQLModel
 target_metadata = SQLModel.metadata
 
-# other values from the config, defined by the needs of env.py,
-# can be acquired:
-# my_important_option = config.get_main_option("my_important_option")
-# ... etc.
+# --------------------------------------------------------
+# Obtiene la DATABASE_URL desde variables de entorno
+# (Railway, Docker, máquina local, etc.)
+# --------------------------------------------------------
 
+def get_url():
+    return os.getenv("DATABASE_URL", "sqlite:///./dev.db")
+
+# --------------------------------------------------------
+# MODO OFFLINE (genera SQL sin conectarse a la DB)
+# --------------------------------------------------------
 
 def run_migrations_offline() -> None:
-    url = config.get_main_option("sqlalchemy.url")
+    """
+    Aquí tomamos el URL desde el engine que ya usa tu app.
+    """
+    url = str(engine.url)
+
     context.configure(
         url=url,
         target_metadata=target_metadata,
         literal_binds=True,
-        compare_type=True,         # detecta cambios de tipos
-        compare_server_default=True
+        dialect_opts={"paramstyle": "named"},
+        compare_type=True,  # importante para detectar cambios
     )
 
     with context.begin_transaction():
         context.run_migrations()
 
+# --------------------------------------------------------
+# MODO ONLINE (se conecta a la base real)
+# --------------------------------------------------------
 
 def run_migrations_online() -> None:
+    """
+    Es el modo que usarás normalmente.
+    OJO: ignoramos el sqlalchemy.url del alembic.ini
+    """
+
+    configuration = config.get_section(config.config_ini_section)
+    configuration["sqlalchemy.url"] = get_url()
+
     connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
+        configuration,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
@@ -59,12 +87,15 @@ def run_migrations_online() -> None:
             connection=connection,
             target_metadata=target_metadata,
             compare_type=True,
-            compare_server_default=True
+            compare_server_default=True,
         )
 
         with context.begin_transaction():
             context.run_migrations()
 
+# --------------------------------------------------------
+# Ejecutar modo correcto
+# --------------------------------------------------------
 
 if context.is_offline_mode():
     run_migrations_offline()
