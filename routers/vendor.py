@@ -251,7 +251,8 @@ async def brand_form(
 
     return templates.TemplateResponse("admin/brand_form.html", {
         "request": request,
-        "branding": branding
+        "branding": branding,
+        "vendor": branding,
     })
 
 # --------------------------
@@ -331,6 +332,10 @@ async def brand_save(
     session.refresh(branding)
     
     return RedirectResponse("/vendor/brand?ok=1", status_code=302)
+
+# --------------------------
+# Reviews
+# --------------------------
 
 @router.post("/u/{slug}/review")
 async def public_create_review(

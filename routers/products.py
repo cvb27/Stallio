@@ -49,6 +49,10 @@ async def products_dashboard(
 ):
     """Renderiza el listado de productos del vendor autenticado."""
     owner_id = _owner_id(request)
+
+    # 👇 nuevo: obtenemos el usuario dueño (tiene slug)
+    vendor = session.get(User, owner_id)
+
     products = session.exec(
         select(Product)
         .where(Product.owner_id == owner_id)
@@ -57,7 +61,10 @@ async def products_dashboard(
     messages = get_flashed_messages(request)
     return templates.TemplateResponse(
         "admin/products.html",  # sin slash inicial para consistencia
-        {"request": request, "products": products, "messages": messages},
+        {"request": request, 
+         "products": products, 
+         "messages": messages,
+         "vendor": vendor,},
     )
 
 

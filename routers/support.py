@@ -54,6 +54,7 @@ async def support_page(slug: str, request: Request, session: Session = Depends(g
         "mailto_link": mailto_link,
         "wa_link": wa_link,
         "tg_link": tg_link,
+        "vendor": vendor,
     }
     return templates.TemplateResponse("admin/support.html", ctx)
 
