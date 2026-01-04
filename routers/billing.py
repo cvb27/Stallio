@@ -136,7 +136,7 @@ async def billing_page(slug: str, request: Request, session: Session = Depends(g
     branding = _get_or_create_branding(session, owner_id)
 
     settings = branding.settings or {}
-    sub_status = settings.get("subscription_status", "inactive")
+    sub_status = (settings.get("subscription_status") or "inactive").strip()
     stripe_customer_id = settings.get("stripe_customer_id")
     stripe_subscription_id = settings.get("stripe_subscription_id")
 

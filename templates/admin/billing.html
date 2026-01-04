@@ -5,40 +5,36 @@
 <div class="container py-4">
   <h2 class="mb-3">Billing</h2>
 
-  {% if messages %}
-    <div class="mb-3">
-      {% for m in messages %}
-        <div class="alert alert-info">{{ m }}</div>
-      {% endfor %}
-    </div>
-  {% endif %}
+  {# Normaliza status por si viene None/vacío #}
+  {% set status = (subscription_status or "inactive") | trim %}
+  {% set is_active = (status == "active") %}
 
-  {% set is_active = (subscription_status == "active") %}
+  <div class="card p-3 mb-3">
+    <p class="mb-0">
+      <strong>Status:</strong>
+      {# SB Admin (Bootstrap 4) usa badge-success/badge-secondary #}
+      <span class="badge {{ 'badge-success' if is_active else 'badge-secondary' }}">
+        {{ status }}
+      </span>
+    </p>
 
-    <div class="card p-3 mb-3">
-      <p class="mb-0">
-        <strong>Status:</strong>
-          <span class="badge {{ 'bg-success' if is_active else 'bg-secondary' }}">
-          {{ subscription_status }}
-          </span>
-      </p>
-    </div>
     {% if stripe_subscription_id %}
-      <p class="mb-1"><strong>Subscription ID:</strong> {{ stripe_subscription_id }}</p>
+      <p class="mb-1 mt-2"><strong>Subscription ID:</strong> {{ stripe_subscription_id }}</p>
     {% endif %}
     {% if stripe_customer_id %}
       <p class="mb-1"><strong>Customer ID:</strong> {{ stripe_customer_id }}</p>
     {% endif %}
   </div>
 
-  <div class="d-flex gap-2">
-    <form method="post" action="/admin/{{ vendor.slug }}/billing/checkout">
+  {# Botones dentro del container (alineación correcta) #}
+  <div class="d-flex align-items-center" style="gap: 10px;">
+    <form method="post" action="/admin/{{ vendor.slug }}/billing/checkout" class="mb-0">
       <button class="btn btn-primary" type="submit">
         Pagar / Activar suscripción
       </button>
     </form>
 
-    <form method="post" action="/admin/{{ vendor.slug }}/billing/portal">
+    <form method="post" action="/admin/{{ vendor.slug }}/billing/portal" class="mb-0">
       <button class="btn btn-outline-secondary" type="submit">
         Administrar (tarjeta, facturas, cancelar)
       </button>
@@ -52,3 +48,7 @@
   </div>
 </div>
 {% endblock %}
+
+  
+
+  
