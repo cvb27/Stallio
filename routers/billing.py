@@ -79,6 +79,28 @@ def _get_or_create_branding(session: Session, owner_id: int) -> VendorBranding:
         branding.settings = {}
     return branding
 
+def _set_subscription_status(session: Session, owner_id: int, status: str, customer_id: str | None = None, subscription_id: str | None = None) -> None:
+    """
+    Guarda el estado de la suscripción en VendorBranding.settings de forma segura.
+    """
+    branding = session.exec(
+        select(VendorBranding).where(VendorBranding.owner_id == int(owner_id))
+    ).first()
+    if not branding:
+        return
+
+    settings = branding.settings or {}
+    settings["subscription_status"] = status
+
+    if customer_id:
+        settings["stripe_customer_id"] = customer_id
+    if subscription_id:
+        settings["stripe_subscription_id"] = subscription_id
+
+    branding.settings = settings
+    session.add(branding)
+    session.commit()
+
 
 # ==========================
 # Rutas
@@ -225,55 +247,46 @@ async def stripe_webhook(request: Request, session: Session = Depends(get_sessio
         )
     except Exception:
         return PlainTextResponse("Invalid signature", status_code=400)
+    
+    etype = event["type"]
+    data = event["data"]["object"]
 
-    # --- Eventos útiles ---
-    # checkout.session.completed: se crea la suscripción y el customer
-    if event["type"] == "checkout.session.completed":
-        obj = event["data"]["object"]
-        owner_id = obj.get("metadata", {}).get("owner_id")
-        customer_id = obj.get("customer")
-        subscription_id = obj.get("subscription")
+    # 1) Cuando checkout termina, ya tienes customer y subscription
+    if etype == "checkout.session.completed":
+        owner_id = data.get("metadata", {}).get("owner_id")
+        customer_id = data.get("customer")
+        subscription_id = data.get("subscription")
 
         if owner_id:
-            branding = session.exec(
-                select(VendorBranding).where(VendorBranding.owner_id == int(owner_id))
-            ).first()
-            if branding:
-                settings = branding.settings or {}
-                settings["stripe_customer_id"] = customer_id
-                settings["stripe_subscription_id"] = subscription_id
-                settings["subscription_status"] = "active"
-                branding.settings = settings
-                session.add(branding)
-                session.commit()
-
-    # customer.subscription.updated / deleted: mantener status
-    if event["type"] in ("customer.subscription.updated", "customer.subscription.deleted"):
-        sub = event["data"]["object"]
-        subscription_id = sub.get("id")
-        status = sub.get("status")  # active, past_due, canceled, unpaid, etc.
-
-        branding = session.exec(
-            select(VendorBranding).where(
-                VendorBranding.settings["stripe_subscription_id"].as_string() == subscription_id  # puede requerir ajuste según tu DB
+            _set_subscription_status(
+                session=session,
+                owner_id=int(owner_id),
+                status="active",
+                customer_id=customer_id,
+                subscription_id=subscription_id,
             )
-        ).first()
 
-        # Si tu DB no soporta consultar JSON así (SQLite), hacemos fallback:
-        if not branding:
-            # fallback: iterar no ideal, pero simple para SQLite dev
-            all_brandings = session.exec(select(VendorBranding)).all()
-            for b in all_brandings:
-                s = b.settings or {}
-                if s.get("stripe_subscription_id") == subscription_id:
-                    branding = b
-                    break
+    # 2) Cambios de suscripción (past_due, canceled, unpaid, etc.)
+    if etype in ("customer.subscription.updated", "customer.subscription.deleted"):
+        subscription_id = data.get("id")
+        status = data.get("status") or "inactive"
+
+        # Buscar branding por subscription_id (fallback universal)
+        branding = None
+        all_brandings = session.exec(select(VendorBranding)).all()
+        for b in all_brandings:
+            s = b.settings or {}
+            if s.get("stripe_subscription_id") == subscription_id:
+                branding = b
+                break
 
         if branding:
-            settings = branding.settings or {}
-            settings["subscription_status"] = status
-            branding.settings = settings
-            session.add(branding)
-            session.commit()
+            _set_subscription_status(
+                session=session,
+                owner_id=int(branding.owner_id),
+                status=status,
+                customer_id=branding.settings.get("stripe_customer_id") if branding.settings else None,
+                subscription_id=subscription_id,
+            )
 
     return PlainTextResponse("ok", status_code=200)
