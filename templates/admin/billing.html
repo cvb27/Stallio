@@ -15,14 +15,14 @@
 
   {% set is_active = (subscription_status == "active") %}
 
-<div class="card p-3 mb-3">
-  <p class="mb-0">
-    <strong>Status:</strong>
-    <span class="badge {{ 'bg-success' if is_active else 'bg-secondary' }}">
-      {{ subscription_status }}
-    </span>
-  </p>
-</div>
+    <div class="card p-3 mb-3">
+      <p class="mb-0">
+        <strong>Status:</strong>
+          <span class="badge {{ 'bg-success' if is_active else 'bg-secondary' }}">
+          {{ subscription_status }}
+          </span>
+      </p>
+    </div>
     {% if stripe_subscription_id %}
       <p class="mb-1"><strong>Subscription ID:</strong> {{ stripe_subscription_id }}</p>
     {% endif %}
