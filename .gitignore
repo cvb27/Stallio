@@ -3,3 +3,16 @@
 .env.prod
 *.envapp.db
 uploads/
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+env/
+*.sqlite3
+*.db
+
+# Env files
+.env
+.env.*

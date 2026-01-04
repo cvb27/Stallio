@@ -45,6 +45,7 @@ sqlmodel==0.0.22
 SQLAlchemy==2.0.43
 sse-starlette==1.6.1
 starlette==0.27.0
+stripe
 typing_extensions==4.7.1
 ujson==5.8.0
 urllib3==2.0.4
