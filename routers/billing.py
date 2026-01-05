@@ -135,6 +135,13 @@ async def billing_page(slug: str, request: Request, session: Session = Depends(g
     vendor = _require_vendor_by_slug(session, slug, owner_id)
     branding = _get_or_create_branding(session, owner_id)
 
+    print(
+    "[BILLING PAGE]",
+    "owner_id=", owner_id,
+    "branding_id=", branding.id,
+    "settings=", branding.settings
+)
+
     settings = branding.settings or {}
     sub_status = (settings.get("subscription_status") or "inactive").strip()
     stripe_customer_id = settings.get("stripe_customer_id")
@@ -287,22 +294,27 @@ async def stripe_webhook(request: Request, session: Session = Depends(get_sessio
 
         print("[WEBHOOK] sub event", etype, "customer=", customer_id, "status=", status)
 
-        # Buscar branding por subscription_id (fallback universal)
+        # Si no hay customer_id, no podemos mapear
+        if not customer_id:
+            return PlainTextResponse("ok", status_code=200)
+        
+        # Fallback universal (funciona en SQLite y Postgres):
         branding = session.exec(
             select(VendorBranding)
             .where(VendorBranding.settings["stripe_customer_id"].as_string() == customer_id)
         ).first()
 
         # Fallback para SQLite / JSON simple
-        if not branding:
-            all_brandings = session.exec(select(VendorBranding)).all()
-            for b in all_brandings:
-                if (b.settings or {}).get("stripe_customer_id") == customer_id:
-                    branding = b
-                    break
+        branding = None
+        all_brandings = session.exec(select(VendorBranding)).all()
+        for b in all_brandings:
+            s = b.settings or {}
+            if s.get("stripe_customer_id") == customer_id:
+                branding = b
+                break
 
         if branding:
-            set_subscription_status(
+            _set_subscription_status(
                 session=session,
                 owner_id=int(branding.owner_id),
                 status=status,
