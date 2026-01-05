@@ -79,27 +79,39 @@ def _get_or_create_branding(session: Session, owner_id: int) -> VendorBranding:
         branding.settings = {}
     return branding
 
-def _set_subscription_status(session: Session, owner_id: int, status: str, customer_id: str | None = None, subscription_id: str | None = None) -> None:
+def _set_subscription_status(
+        session: Session, 
+        owner_id: int, 
+        status: str, 
+        customer_id: str | None = None, 
+        subscription_id: str | None = None
+):
     """
     Guarda el estado de la suscripción en VendorBranding.settings de forma segura.
     """
     branding = session.exec(
         select(VendorBranding).where(VendorBranding.owner_id == int(owner_id))
     ).first()
+
     if not branding:
+        print("[WEBHOOK] branding not found for owner", owner_id)
         return
 
     settings = branding.settings or {}
+
     settings["subscription_status"] = status
 
     if customer_id:
         settings["stripe_customer_id"] = customer_id
+
     if subscription_id:
         settings["stripe_subscription_id"] = subscription_id
 
     branding.settings = settings
     session.add(branding)
     session.commit()
+
+    print("[WEBHOOK] subscription saved:", settings)
 
 
 # ==========================
