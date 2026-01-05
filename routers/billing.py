@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, PlainTextResponse
 from sqlmodel import Session, select
 from templates_engine import templates
+from datetime import datetime
 
 from db import get_session
 from models import User, VendorBranding  # ajusta si tu modelo está en otro lugar
