@@ -133,8 +133,15 @@ async def billing_page(slug: str, request: Request, session: Session = Depends(g
     """
     owner_id = _require_login(request)
     vendor = _require_vendor_by_slug(session, slug, owner_id)
-    branding = _get_or_create_branding(session, owner_id)
+    branding = session.exec(
+        select(VendorBranding).where(VendorBranding.owner_id == owner_id)
+    ).first()
 
+    if not branding:
+        raise HTTPException(
+            status_code=400,
+            detail="Branding no encontrado. Completa la configuración de tu tienda."
+    )
     print(
     "[BILLING PAGE]",
     "owner_id=", owner_id,
