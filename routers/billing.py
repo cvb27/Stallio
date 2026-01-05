@@ -174,6 +174,9 @@ async def billing_page(slug: str, request: Request, session: Session = Depends(g
         "stripe_customer_id": stripe_customer_id,
         "stripe_subscription_id": stripe_subscription_id,
     }
+
+    print("[BILLING PAGE] slug=", slug, "owner_id=", owner_id, "branding_id=", branding.id, "settings=", branding.settings)
+
     return templates.TemplateResponse("admin/billing.html", ctx)
 
 
@@ -297,7 +300,8 @@ async def stripe_webhook(request: Request, session: Session = Depends(get_sessio
                 customer_id=customer_id,
                 subscription_id=subscription_id,
             )
-
+        return PlainTextResponse("ok", status_code=200)
+        
     # ==========================
     # 2) Eventos de suscripción -> sincronizar status por customer_id
     # ==========================
@@ -313,22 +317,12 @@ async def stripe_webhook(request: Request, session: Session = Depends(get_sessio
 
         print("[WEBHOOK] sub event", etype, "customer=", customer_id, "status=", status)
 
-        # Si no hay customer_id, no podemos mapear
-        if not customer_id:
-            return PlainTextResponse("ok", status_code=200)
-        
-        # Fallback universal (funciona en SQLite y Postgres):
-        branding = session.exec(
-            select(VendorBranding)
-            .where(VendorBranding.settings["stripe_customer_id"].as_string() == customer_id)
-        ).first()
-
-        # Fallback para SQLite / JSON simple
+        # fallback universal: recorre (simple y seguro)
         branding = None
         all_brandings = session.exec(select(VendorBranding)).all()
         for b in all_brandings:
             s = b.settings or {}
-            if s.get("stripe_customer_id") == customer_id:
+            if s.get("stripe_subscription_id") == subscription_id:
                 branding = b
                 break
 
@@ -339,5 +333,6 @@ async def stripe_webhook(request: Request, session: Session = Depends(get_sessio
                 status=status,
                 customer_id=customer_id,
                 subscription_id=subscription_id,
-        )
+            )
+        return PlainTextResponse("ok", status_code=200)
     return PlainTextResponse("ok", status_code=200)
