@@ -162,23 +162,51 @@ async def billing_page(slug: str, request: Request, session: Session = Depends(g
 )
 
     settings = branding.settings or {}
-    sub_status = (settings.get("subscription_status") or "inactive").strip()
+
+    # ✅ Sync inmediato al volver de Stripe (NO depende del webhook)
+    session_id = request.query_params.get("session_id")
+    if session_id and stripe.api_key:
+        try:
+            cs = stripe.checkout.Session.retrieve(session_id, expand=["subscription"])
+            customer_id = cs.get("customer")
+            subscription_id = cs.get("subscription") if isinstance(cs.get("subscription"), str) else cs["subscription"]["id"]
+            status = "active"
+            # si expandió subscription, toma status real
+            if isinstance(cs.get("subscription"), dict):
+                status = cs["subscription"].get("status", "active")
+
+            # Guarda en settings (merge, NO reemplaza todo)
+            settings = dict(settings)  # copia
+            settings["stripe_customer_id"] = customer_id
+            settings["stripe_subscription_id"] = subscription_id
+            settings["subscription_status"] = status
+            settings["subscription_updated_at"] = datetime.utcnow().isoformat()
+
+            branding.settings = settings
+            session.add(branding)
+            session.commit()
+            session.refresh(branding)
+
+            print("[BILLING SYNC] saved ->", branding.id, branding.owner_id, branding.settings)
+
+        except Exception as e:
+            print("[BILLING SYNC] failed:", str(e))
+
+    # (relee settings por si lo acabamos de actualizar)
+    settings = branding.settings or {}
+    sub_status = settings.get("subscription_status", "inactive")
     stripe_customer_id = settings.get("stripe_customer_id")
     stripe_subscription_id = settings.get("stripe_subscription_id")
 
     ctx = {
         "request": request,
-        "vendor": vendor,  # requerido por admin/layout.html
+        "vendor": vendor,
         "branding": branding,
         "subscription_status": sub_status,
         "stripe_customer_id": stripe_customer_id,
         "stripe_subscription_id": stripe_subscription_id,
     }
-
-    print("[BILLING PAGE] slug=", slug, "owner_id=", owner_id, "branding_id=", branding.id, "settings=", branding.settings)
-
     return templates.TemplateResponse("admin/billing.html", ctx)
-
 
 
 @router.post("/admin/{slug}/billing/checkout")
@@ -197,7 +225,7 @@ async def billing_checkout(slug: str, request: Request, session: Session = Depen
         raise HTTPException(status_code=500, detail="Plan no configurado (STRIPE_PRICE_ID).")
 
     # URLs de retorno
-    success_url = f"{PUBLIC_BASE_URL}/admin/{quote(vendor.slug)}/billing?success=1"
+    success_url = f"{PUBLIC_BASE_URL}/admin/{quote(vendor.slug)}/billing?success=1&session_id={{CHECKOUT_SESSION_ID}}"
     cancel_url  = f"{PUBLIC_BASE_URL}/admin/{quote(vendor.slug)}/billing?canceled=1"
 
     settings = branding.settings or {}
