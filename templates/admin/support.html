@@ -6,7 +6,7 @@
   <!-- Encabezado -->
  
   <div class="d-flex align-items-center justify-content-between mb-4">
-    <h1 class="h4 mb-0">Soporte</h1>
+    <h1 class="h4 mb-0">Support</h1>
   </div>
 
   <div class="row">
@@ -15,29 +15,30 @@
       <!-- Card principal -->
       <div class="card shadow mb-4">
         <div class="card-header py-3 d-flex align-items-center justify-content-between">
-          <h6 class="m-0 font-weight-bold text-primary">Canales de soporte</h6>
+          <h6 class="m-0 font-weight-bold text-primary">Support channels</h6>
         </div>
         <div class="card-body">
 
           <!-- Descripción -->
           <p class="mb-4">
-            ¿Necesitas ayuda ? Elige uno de nuestros canales de soporte para contactar a
-            <strong>{{ brand }}</strong>.
+            Need help? Choose one of our support channels to contact us.
+            
           </p>
 
           <!-- Canal: Email -->
           <div class="mb-4">
-            <h5 class="mb-2"><i class="fas fa-envelope mr-2"></i>Correo</h5>
+            <h5 class="mb-2"><i class="fas fa-envelope mr-2"></i>Email</h5>
             <div class="d-flex align-items-center flex-wrap">
+              
               <span class="mr-3 text-monospace" id="support-email">{{ support_email }}</span>
               <a href="{{ mailto_link }}" class="btn btn-sm btn-primary mr-2">
-                Enviar correo
+                Send email
               </a>
               <button class="btn btn-sm btn-outline-secondary" onclick="copyEmail()">
                 Copiar correo
               </button>
             </div>
-            <small class="text-muted d-block mt-2">Se abrirá tu cliente de correo con el asunto y mensaje prellenados.</small>
+            <small class="text-muted d-block mt-2">Your email client will open with the subject and message pre-filled.</small>
           </div>
 
           <hr>
@@ -46,10 +47,10 @@
           <div class="mb-4">
             <h5 class="mb-2"><i class="fab fa-whatsapp mr-2"></i>WhatsApp</h5>
             <a href="{{ wa_link }}" target="_blank" rel="noopener" class="btn btn-success">
-              Escribenos via WhatsApp
+              Write to us via WhatsApp.
             </a>
             <small class="text-muted d-block mt-2">
-              Se abrirá un chat con mensaje de saludo listo para enviar.
+              A chat window will open with a greeting message ready to send.
             </small>
           </div>
 
@@ -59,10 +60,10 @@
           <div class="mb-2">
             <h5 class="mb-2"><i class="fab fa-telegram-plane mr-2"></i>Telegram</h5>
             <a href="{{ tg_link }}" target="_blank" rel="noopener" class="btn btn-info">
-              Ir al grupo de soporte
+              Go to the support group
             </a>
             <small class="text-muted d-block mt-2">
-              Accede a nuestro grupo de soporte en Telegram.
+              Access our support group on Telegram.
             </small>
           </div>
 
@@ -72,11 +73,11 @@
       <!-- Info adicional (opcional) -->
       <div class="card shadow">
         <div class="card-body">
-          <h6 class="font-weight-bold mb-2">Consejos para atención más rápida</h6>
+          <h6 class="font-weight-bold mb-2">Tips for faster service</h6>
           <ul class="mb-0">
-            <li>Incluye el <strong>ID de pedido</strong> si lo tienes.</li>
-            <li>Describe brevemente el problema.</li>
-            <li>Adjunta capturas (si aplica).</li>
+            <li>Includes the <strong>Order ID</strong> if you have it.</li>
+            <li>Briefly describe the problem..</li>
+            <li>AAttach screenshots (if applicable).</li>
           </ul>
         </div>
       </div>
