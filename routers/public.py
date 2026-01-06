@@ -30,9 +30,23 @@ def _get_cart(request: Request):
   return cart
 
 # ---------- HOME MASTER ----------
-@router.get("/", include_in_schema=False)
-def root_redirect():
-     return RedirectResponse("/login", status_code=302)
+@router.get("/", include_in_schema=False, response_class=HTMLResponse)
+async def root_home(request: Request):
+    """
+    Home real (landing page).
+    - Video demo
+    - CTA Login / Crear cuenta
+    - No toca el home público (/public) ni las tiendas (/u/{slug})
+    """
+    return templates.TemplateResponse(
+        "marketing/home.html",
+        {
+            "request": request,
+            # cambia esto por tu video real (YouTube/Vimeo embed)
+            "video_url": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+        }
+    )
+     
 
 
 # ---------- HOME PÚBLICO ----------

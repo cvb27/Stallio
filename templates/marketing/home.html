@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Stallio</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- META SEO BÁSICO -->
+  <meta name="description" content="Crea tu página de ventas en minutos. Comparte tu catálogo y recibe pedidos con Stallio.">
+  <meta name="theme-color" content="#0a0f1c">
+
+  <!-- ESTILOS -->
+  <style>
+    :root{
+      --brand-primary:#2563eb;
+      --brand-accent:#22c55e;
+      --brand-bg:#0a0f1c;
+      --brand-card:rgba(255,255,255,0.06);
+      --brand-border:rgba(255,255,255,0.12);
+      --brand-text:rgba(255,255,255,0.92);
+      --brand-muted:rgba(255,255,255,0.72);
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Helvetica Neue",Arial,sans-serif;
+      color:var(--brand-text);
+      background:
+        radial-gradient(1200px 600px at 15% 10%, rgba(37,99,235,0.25), transparent 60%),
+        radial-gradient(900px 500px at 90% 20%, rgba(34,197,94,0.18), transparent 55%),
+        linear-gradient(180deg, var(--brand-bg), #070b14);
+    }
+
+    a{color:inherit}
+
+    .container{
+      width:min(1100px, calc(100% - 40px));
+      margin:0 auto;
+      padding:56px 0;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:1.1fr 0.9fr;
+      gap:32px;
+      align-items:start;
+    }
+
+    @media(max-width:980px){
+      .grid{grid-template-columns:1fr}
+    }
+
+    /* ---------- LEFT ---------- */
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      padding:8px 14px;
+      border-radius:999px;
+      border:1px solid var(--brand-border);
+      background:rgba(255,255,255,0.04);
+      font-size:13px;
+      color:var(--brand-muted);
+    }
+
+    .dot{
+      width:8px;height:8px;border-radius:50%;
+      background:var(--brand-accent);
+      box-shadow:0 0 0 4px rgba(34,197,94,0.18);
+    }
+
+    h1{
+      margin:16px 0 12px;
+      font-size:40px;
+      line-height:1.1;
+      letter-spacing:-0.02em;
+    }
+
+    @media(max-width:520px){
+      h1{font-size:32px}
+    }
+
+    .accent{
+      background:linear-gradient(90deg,#2563eb,#22c55e);
+      -webkit-background-clip:text;
+      background-clip:text;
+      -webkit-text-fill-color:transparent;
+    }
+
+    .subtitle{
+      max-width:58ch;
+      font-size:16px;
+      line-height:1.55;
+      color:var(--brand-muted);
+      margin-bottom:18px;
+    }
+
+    .features{
+      display:grid;
+      gap:12px;
+      margin-bottom:20px;
+    }
+
+    .feature{
+      padding:14px;
+      border-radius:16px;
+      border:1px solid var(--brand-border);
+      background:rgba(255,255,255,0.03);
+      font-size:15px;
+    }
+
+    .cta{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-top:12px;
+    }
+
+    .btn{
+      padding:12px 18px;
+      border-radius:14px;
+      font-weight:700;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+    }
+
+    .btn-primary{
+      background:linear-gradient(90deg,#2563eb,#22c55e);
+      color:white;
+    }
+
+    .btn-outline{
+      border:1px solid var(--brand-border);
+      background:rgba(255,255,255,0.04);
+      color:var(--brand-text);
+    }
+
+    .note{
+      margin-top:14px;
+      font-size:13px;
+      color:var(--brand-muted);
+    }
+
+    /* ---------- RIGHT ---------- */
+    .card{
+      border-radius:20px;
+      border:1px solid var(--brand-border);
+      background:var(--brand-card);
+      box-shadow:0 20px 60px rgba(0,0,0,0.35);
+      overflow:hidden;
+    }
+
+    .card-head{
+      padding:18px;
+      border-bottom:1px solid var(--brand-border);
+    }
+
+    .card-title{
+      font-weight:800;
+      font-size:16px;
+    }
+
+    .card-sub{
+      margin-top:4px;
+      font-size:13px;
+      color:var(--brand-muted);
+    }
+
+    .video{
+      position:relative;
+      width:100%;
+      padding-top:56.25%;
+    }
+
+    .video iframe{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+    }
+
+    .card-foot{
+      padding:18px;
+      display:grid;
+      gap:10px;
+    }
+
+    .full{width:100%}
+
+    footer{
+      margin-top:40px;
+      padding-top:20px;
+      border-top:1px solid rgba(255,255,255,0.08);
+      display:flex;
+      justify-content:space-between;
+      flex-wrap:wrap;
+      gap:12px;
+      font-size:13px;
+      color:var(--brand-muted);
+    }
+  </style>
+</head>
+
+<body>
+
+  <main class="container">
+    <div class="grid">
+
+      <!-- LEFT -->
+      <section>
+        <div class="badge">
+          <span class="dot"></span>
+          Stallio. Built for sellers and small businesses
+        </div>
+
+        <h1>
+          Turn your products into<br>
+        <span class="accent">more sales and more income</span>.
+        </h1>
+
+        <p class="subtitle">
+          Stallio helps you create your own professional website in minutes — no technical
+          knowledge required. Reach more customers, manage orders with ease, and free up
+          time to focus on growing your business.
+        </p>
+
+        <div class="features">
+          <div class="feature">✓ Your own website with a clean, professional image</div>
+          <div class="feature">✓ Better order management and customer organization</div>
+          <div class="feature">✓ More reach, more trust, and more conversions</div>
+          <div class="feature">✓ Save time and operate your business more efficiently</div>
+        </div>
+
+        <div class="cta">
+          <a href="/signup" class="btn btn-primary">Start your free trial</a>
+          <a href="/login" class="btn btn-outline">Sign in</a>
+        </div>
+
+        <div class="note">
+          30-day free trial • No credit card required • No commitments
+
+        </div>
+      </section>
+
+      <!-- RIGHT -->
+      <section class="card">
+        <div class="card-head">
+          <div class="card-title">See how Stallio works</div>
+          <div class="card-sub">Create your site, publish products, and start receiving orders.</div>
+        </div>
+
+        <div class="video">
+          <iframe
+            src="{{ video_url }}"
+            title="Stallio Demo"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen>
+          </iframe>
+        </div>
+
+        <div class="card-foot">
+          <a href="/signup" class="btn btn-primary full">Create your store now</a>
+          <a href="/login" class="btn btn-outline full">I already have an account</a>
+        </div>
+      </section>
+
+    </div>
+
+    <footer>
+      <div><b>Stallio</b> — Grow your business with confidence</div>
+      <div>© {{ request.url.hostname }} · All rights reserved</div>
+    </footer>
+  </main>
+
+</body>
+</html>
