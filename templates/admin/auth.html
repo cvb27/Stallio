@@ -1,4 +1,333 @@
 <!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in — Stallio</title>
+  <meta name="description" content="Sign in to Stallio and manage your products and orders. 30-day free trial. No credit card required.">
+  <meta name="theme-color" content="#0a0f1c">
+
+  <style>
+    :root{
+      --brand-primary:#2563eb;
+      --brand-accent:#22c55e;
+      --brand-bg:#0a0f1c;
+      --brand-card:rgba(255,255,255,0.06);
+      --brand-border:rgba(255,255,255,0.12);
+      --brand-text:rgba(255,255,255,0.92);
+      --brand-muted:rgba(255,255,255,0.72);
+      --brand-danger:#ef4444;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Helvetica Neue",Arial,sans-serif;
+      color:var(--brand-text);
+      background:
+        radial-gradient(1200px 600px at 15% 10%, rgba(37,99,235,0.25), transparent 60%),
+        radial-gradient(900px 500px at 90% 20%, rgba(34,197,94,0.18), transparent 55%),
+        linear-gradient(180deg, var(--brand-bg), #070b14);
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:28px 0;
+    }
+
+    a{color:inherit}
+
+    .wrap{
+      width:min(980px, calc(100% - 40px));
+      display:grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap:22px;
+      align-items:stretch;
+    }
+    @media(max-width:980px){ .wrap{grid-template-columns:1fr} }
+
+    .panel{
+      border:1px solid var(--brand-border);
+      background:rgba(255,255,255,0.03);
+      border-radius:22px;
+      padding:22px;
+      box-shadow:0 20px 60px rgba(0,0,0,0.35);
+      overflow:hidden;
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:14px;
+      margin-bottom:10px;
+    }
+    .logo{
+      width:52px;height:52px;
+      border-radius:16px;
+      background:#fff;
+      padding:10px;
+      box-shadow:0 10px 30px rgba(0,0,0,0.18);
+      object-fit:contain;
+    }
+    .brand h1{
+      margin:0;
+      font-size:18px;
+      font-weight:850;
+      letter-spacing:0.2px;
+    }
+    .brand p{
+      margin:3px 0 0;
+      font-size:13px;
+      color:var(--brand-muted);
+    }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      padding:8px 14px;
+      border-radius:999px;
+      border:1px solid var(--brand-border);
+      background:rgba(255,255,255,0.04);
+      font-size:13px;
+      color:var(--brand-muted);
+      margin-top:10px;
+    }
+    .dot{
+      width:8px;height:8px;border-radius:50%;
+      background:var(--brand-accent);
+      box-shadow:0 0 0 4px rgba(34,197,94,0.18);
+    }
+
+    .headline{
+      margin:14px 0 10px;
+      font-size:28px;
+      line-height:1.15;
+      letter-spacing:-0.02em;
+    }
+    .accent{
+      background:linear-gradient(90deg,#2563eb,#22c55e);
+      -webkit-background-clip:text;
+      background-clip:text;
+      -webkit-text-fill-color:transparent;
+    }
+    .sub{
+      margin:0 0 14px;
+      color:var(--brand-muted);
+      line-height:1.6;
+      font-size:14px;
+      max-width:60ch;
+    }
+
+    .list{
+      margin:14px 0 0;
+      display:grid;
+      gap:10px;
+    }
+    .item{
+      padding:12px 14px;
+      border-radius:16px;
+      border:1px solid var(--brand-border);
+      background:rgba(255,255,255,0.03);
+      font-size:14px;
+    }
+
+    .card{
+      border:1px solid var(--brand-border);
+      background:var(--brand-card);
+      border-radius:22px;
+      box-shadow:0 20px 60px rgba(0,0,0,0.35);
+      overflow:hidden;
+    }
+    .cardHead{
+      padding:18px 18px 12px;
+      border-bottom:1px solid var(--brand-border);
+    }
+    .cardTitle{
+      font-weight:900;
+      font-size:16px;
+      margin:0;
+    }
+    .cardSub{
+      margin:6px 0 0;
+      color:var(--brand-muted);
+      font-size:13px;
+      line-height:1.5;
+    }
+
+    form{
+      padding:16px 18px 18px;
+      display:grid;
+      gap:12px;
+    }
+    label{
+      font-size:13px;
+      color:var(--brand-muted);
+    }
+    input{
+      width:100%;
+      padding:12px 12px;
+      border-radius:14px;
+      border:1px solid var(--brand-border);
+      background:rgba(0,0,0,0.18);
+      color:var(--brand-text);
+      outline:none;
+    }
+    input:focus{
+      border-color:rgba(37,99,235,0.55);
+      box-shadow:0 0 0 4px rgba(37,99,235,0.15);
+    }
+
+    .btn{
+      padding:12px 14px;
+      border-radius:14px;
+      font-weight:800;
+      border:1px solid transparent;
+      cursor:pointer;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .btnPrimary{
+      background:linear-gradient(90deg,#2563eb,#22c55e);
+      color:#fff;
+    }
+    .btnOutline{
+      background:rgba(255,255,255,0.04);
+      border-color:var(--brand-border);
+      color:var(--brand-text);
+    }
+    .btnPrimary:hover{ filter:brightness(1.03); }
+    .btnOutline:hover{ border-color:rgba(37,99,235,0.55); }
+
+    .row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .link{
+      font-size:13px;
+      color:rgba(255,255,255,0.85);
+      text-decoration:none;
+    }
+    .link:hover{ text-decoration:underline; }
+
+    .alert{
+      margin:0 18px 16px;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid rgba(239,68,68,0.35);
+      background:rgba(239,68,68,0.10);
+      color:rgba(255,255,255,0.92);
+      font-size:13px;
+    }
+
+    .footNote{
+      padding:0 18px 18px;
+      color:var(--brand-muted);
+      font-size:12px;
+      line-height:1.5;
+    }
+
+    .tinyNav{
+      margin-top:14px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      color:var(--brand-muted);
+      font-size:12px;
+    }
+    .tinyNav a{ color:rgba(255,255,255,0.85); text-decoration:none; }
+    .tinyNav a:hover{ text-decoration:underline; }
+  </style>
+</head>
+
+<body>
+
+  <div class="wrap">
+
+    <!-- LEFT: Trust / Value -->
+    <section class="panel">
+      <div class="brand">
+        <img src="/static/admin/img/logo.svg" alt="Stallio" class="logo" loading="lazy">
+        <div>
+          <h1>Stallio</h1>
+          <p>Sell smarter. Look professional. Save time.</p>
+        </div>
+      </div>
+
+      <div class="badge"><span class="dot"></span> 30-day free trial • No credit card required</div>
+
+      <div class="headline">
+        Grow your sales with your own <span class="accent">professional website</span>.
+      </div>
+
+      <p class="sub">
+        Stallio is built for sellers and small businesses that want to reach more customers, manage orders faster,
+        and build trust with a clean online presence — without technical skills.
+      </p>
+
+      <div class="list">
+        <div class="item">✓ Share a simple link that customers trust</div>
+        <div class="item">✓ Manage orders and stay organized</div>
+        <div class="item">✓ Save time and focus on your business</div>
+      </div>
+
+      <div class="tinyNav">
+        <span>Back to</span> <a href="/">Home</a>
+        <span>•</span> <a href="/public">Explore</a>
+      </div>
+    </section>
+
+    <!-- RIGHT: Sign In -->
+    <section class="card">
+      <div class="cardHead">
+        <p class="cardTitle">Sign in</p>
+        <p class="cardSub">Access your dashboard to manage products, orders, and your store.</p>
+      </div>
+
+      <form method="post" action="/login">
+        <div>
+          <label for="email">Email</label>
+          <input id="email" type="email" name="email" placeholder="you@business.com" required>
+        </div>
+
+        <div>
+          <label for="password">Password</label>
+          <input id="password" type="password" name="password" placeholder="••••••••" required>
+        </div>
+
+        <button class="btn btnPrimary" type="submit">Sign in</button>
+
+        <div class="row">
+          <a class="link" href="/forgot">Forgot password?</a>
+          <a class="link" href="/signup">Create an account</a>
+        </div>
+      </form>
+
+      {% if error %}
+      <div class="alert">{{ error }}</div>
+      {% endif %}
+
+      <div class="footNote">
+        New to Stallio? Start your 30-day free trial — no credit card required, no commitment.
+      </div>
+    </section>
+
+  </div>
+
+</body>
+</html>
+
+
+
+
+
+<!-- 
+<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
@@ -6,7 +335,7 @@
   <title>Login</title>
 
 
-    <!-- Custom styles for this template-->
+    Custom styles for this template
     <link href="static/admin/css/sb-admin-2.min.css" rel="stylesheet">
     <style>
         .brand-logo {
@@ -30,13 +359,13 @@
     
     <div class="container">
 
-        <!-- Outer Row -->
+         Outer Row
         <div class="row justify-content-center">
             <div class="col-xl-10 col-lg-12 col-md-9">
 
                 
                 <div class="card o-hidden border-0 shadow-lg my-5">
-                    <!-- Brand header (logo + nombre) -->
+                    Brand header (logo + nombre) 
                 
                     <div class="card-body p-0">
                         <div class="text-center mb-4">
@@ -48,16 +377,16 @@
                         height="88"
                         loading="lazy"
                     />
-                    <!--<h1 class="h4 text-gray-900 brand-name mb-1">Stallio.app</h1>-->
+                  
                     <p class="text-muted small mb-0">Gestión de ventas, simple y rápido</p>
                 </div>
-                        <!-- Nested Row within Card Body -->
+                       Nested Row within Card Body 
                         <div class="row">
                             <div class="col-lg-6 d-none d-lg-block bg-login-image"></div>
                             <div class="col-lg-6">
                                 <div class="p-5">
                                     <div class="text-center">
-                                        <!--<h1 class="h4 text-gray-900 mb-4">Welcome Back!</h1>-->
+                                   
                                     </div>
 
                                     <form class="user" method="post" action="/login">
@@ -97,17 +426,17 @@
 
     </div>
 
-    <!-- Bootstrap core JavaScript-->
+    Bootstrap core JavaScript
     <script src="static/admin/vendor/jquery/jquery.min.js"></script>
     <script src="static/admin/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 
-    <!-- Core plugin JavaScript-->
+    Core plugin JavaScrip
     <script src="static/admin/vendor/jquery-easing/jquery.easing.min.js"></script>
 
-    <!-- Custom scripts for all pages-->
+    Custom scripts for all pages
     <script src="static/admin/js/sb-admin-2.min.js"></script>
 
 </body>
 
 </html>
-
+-->

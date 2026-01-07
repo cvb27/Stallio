@@ -1,4 +1,349 @@
 <!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Create account — Stallio</title>
+  <meta name="description" content="Create your Stallio account and start a 30-day free trial. No credit card required.">
+  <meta name="theme-color" content="#0a0f1c">
+
+  <style>
+    :root{
+      --brand-primary:#2563eb;
+      --brand-accent:#22c55e;
+      --brand-bg:#0a0f1c;
+      --brand-card:rgba(255,255,255,0.06);
+      --brand-border:rgba(255,255,255,0.12);
+      --brand-text:rgba(255,255,255,0.92);
+      --brand-muted:rgba(255,255,255,0.72);
+      --brand-danger:#ef4444;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Helvetica Neue",Arial,sans-serif;
+      color:var(--brand-text);
+      background:
+        radial-gradient(1200px 600px at 15% 10%, rgba(37,99,235,0.25), transparent 60%),
+        radial-gradient(900px 500px at 90% 20%, rgba(34,197,94,0.18), transparent 55%),
+        linear-gradient(180deg, var(--brand-bg), #070b14);
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:28px 0;
+    }
+
+    a{color:inherit}
+
+    .wrap{
+      width:min(980px, calc(100% - 40px));
+      display:grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap:22px;
+      align-items:stretch;
+    }
+    @media(max-width:980px){ .wrap{grid-template-columns:1fr} }
+
+    .panel{
+      border:1px solid var(--brand-border);
+      background:rgba(255,255,255,0.03);
+      border-radius:22px;
+      padding:22px;
+      box-shadow:0 20px 60px rgba(0,0,0,0.35);
+      overflow:hidden;
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:14px;
+      margin-bottom:10px;
+    }
+    .logo{
+      width:52px;height:52px;
+      border-radius:16px;
+      background:#fff;
+      padding:10px;
+      box-shadow:0 10px 30px rgba(0,0,0,0.18);
+      object-fit:contain;
+    }
+    .brand h1{
+      margin:0;
+      font-size:18px;
+      font-weight:850;
+      letter-spacing:0.2px;
+    }
+    .brand p{
+      margin:3px 0 0;
+      font-size:13px;
+      color:var(--brand-muted);
+    }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      padding:8px 14px;
+      border-radius:999px;
+      border:1px solid var(--brand-border);
+      background:rgba(255,255,255,0.04);
+      font-size:13px;
+      color:var(--brand-muted);
+      margin-top:10px;
+    }
+    .dot{
+      width:8px;height:8px;border-radius:50%;
+      background:var(--brand-accent);
+      box-shadow:0 0 0 4px rgba(34,197,94,0.18);
+    }
+
+    .headline{
+      margin:14px 0 10px;
+      font-size:28px;
+      line-height:1.15;
+      letter-spacing:-0.02em;
+    }
+    .accent{
+      background:linear-gradient(90deg,#2563eb,#22c55e);
+      -webkit-background-clip:text;
+      background-clip:text;
+      -webkit-text-fill-color:transparent;
+    }
+    .sub{
+      margin:0 0 14px;
+      color:var(--brand-muted);
+      line-height:1.6;
+      font-size:14px;
+      max-width:60ch;
+    }
+
+    .steps{
+      margin-top:14px;
+      display:grid;
+      gap:10px;
+    }
+    .step{
+      padding:12px 14px;
+      border-radius:16px;
+      border:1px solid var(--brand-border);
+      background:rgba(255,255,255,0.03);
+      font-size:14px;
+      line-height:1.45;
+    }
+
+    .card{
+      border:1px solid var(--brand-border);
+      background:var(--brand-card);
+      border-radius:22px;
+      box-shadow:0 20px 60px rgba(0,0,0,0.35);
+      overflow:hidden;
+    }
+    .cardHead{
+      padding:18px 18px 12px;
+      border-bottom:1px solid var(--brand-border);
+    }
+    .cardTitle{
+      font-weight:900;
+      font-size:16px;
+      margin:0;
+    }
+    .cardSub{
+      margin:6px 0 0;
+      color:var(--brand-muted);
+      font-size:13px;
+      line-height:1.5;
+    }
+
+    form{
+      padding:16px 18px 18px;
+      display:grid;
+      gap:12px;
+    }
+    label{
+      font-size:13px;
+      color:var(--brand-muted);
+    }
+    input{
+      width:100%;
+      padding:12px 12px;
+      border-radius:14px;
+      border:1px solid var(--brand-border);
+      background:rgba(0,0,0,0.18);
+      color:var(--brand-text);
+      outline:none;
+    }
+    input:focus{
+      border-color:rgba(37,99,235,0.55);
+      box-shadow:0 0 0 4px rgba(37,99,235,0.15);
+    }
+
+    .hint{
+      font-size:12px;
+      color:var(--brand-muted);
+      margin-top:6px;
+      line-height:1.4;
+    }
+
+    .btn{
+      padding:12px 14px;
+      border-radius:14px;
+      font-weight:800;
+      border:1px solid transparent;
+      cursor:pointer;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .btnPrimary{
+      background:linear-gradient(90deg,#2563eb,#22c55e);
+      color:#fff;
+    }
+    .btnOutline{
+      background:rgba(255,255,255,0.04);
+      border-color:var(--brand-border);
+      color:var(--brand-text);
+    }
+    .btnPrimary:hover{ filter:brightness(1.03); }
+    .btnOutline:hover{ border-color:rgba(37,99,235,0.55); }
+
+    .row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .link{
+      font-size:13px;
+      color:rgba(255,255,255,0.85);
+      text-decoration:none;
+    }
+    .link:hover{ text-decoration:underline; }
+
+    .alert{
+      margin:0 18px 16px;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid rgba(239,68,68,0.35);
+      background:rgba(239,68,68,0.10);
+      color:rgba(255,255,255,0.92);
+      font-size:13px;
+    }
+
+    .footNote{
+      padding:0 18px 18px;
+      color:var(--brand-muted);
+      font-size:12px;
+      line-height:1.5;
+    }
+
+    .tinyNav{
+      margin-top:14px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      color:var(--brand-muted);
+      font-size:12px;
+    }
+    .tinyNav a{ color:rgba(255,255,255,0.85); text-decoration:none; }
+    .tinyNav a:hover{ text-decoration:underline; }
+  </style>
+</head>
+
+<body>
+
+  <div class="wrap">
+
+    <!-- LEFT: Trust / What you get -->
+    <section class="panel">
+      <div class="brand">
+        <img src="/static/admin/img/logo.svg" alt="Stallio" class="logo" loading="lazy">
+        <div>
+          <h1>Stallio</h1>
+          <p>Built to help you sell more.</p>
+        </div>
+      </div>
+
+      <div class="badge"><span class="dot"></span> 30-day free trial • No credit card required</div>
+
+      <div class="headline">
+        Launch your store and start getting <span class="accent">more orders</span>.
+      </div>
+
+      <p class="sub">
+        Create your account and get a professional website you can share with customers.
+        No technical setup, no complicated tools — just a clean store that helps you look serious and sell more.
+      </p>
+
+      <div class="steps">
+        <div class="step"><b>1)</b> Create your account (takes seconds)</div>
+        <div class="step"><b>2)</b> Add products and pricing</div>
+        <div class="step"><b>3)</b> Share your link and receive orders</div>
+      </div>
+
+      <div class="tinyNav">
+        <span>Back to</span> <a href="/">Home</a>
+        
+      </div>
+    </section>
+
+    <!-- RIGHT: Sign Up -->
+    <section class="card">
+      <div class="cardHead">
+        <p class="cardTitle">Create your account</p>
+        <p class="cardSub">Start your 30-day free trial — no card, no commitment.</p>
+      </div>
+
+      <form method="post" action="/signup">
+        <div>
+          <label for="name">Name (optional)</label>
+          <input id="name" type="text" name="name" value="{{ name or '' }}" placeholder="Your name">
+        </div>
+
+        <div>
+          <label for="email">Email</label>
+          <input id="email" type="email" name="email" value="{{ email or '' }}" placeholder="you@business.com" required>
+        </div>
+
+        <div>
+          <label for="password">Password</label>
+          <input id="password" type="password" name="password" placeholder="Create a password" required>
+          <div class="hint">Recommended: 8+ characters. Use a mix of letters and numbers for better security.</div>
+        </div>
+
+        <button class="btn btnPrimary" type="submit">Start free trial</button>
+
+        <div class="row">
+          <a class="link" href="/login">I already have an account</a>
+          <a class="link" href="/forgot">Forgot password?</a>
+        </div>
+      </form>
+
+      {% if error %}
+      <div class="alert">{{ error }}</div>
+      {% endif %}
+
+      <div class="footNote">
+        By creating an account you’ll be able to publish your store, manage orders, and save time —
+        so you can focus on growing your business.
+      </div>
+    </section>
+
+  </div>
+
+</body>
+</html>
+
+
+
+
+
+
+<!--
+<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
@@ -6,7 +351,7 @@
   <title>Login</title>
 
 
-    <!-- Custom styles for this template-->
+     Custom styles for this template
     <link href="static/admin/css/sb-admin-2.min.css" rel="stylesheet">
 
 </head>
@@ -52,3 +397,4 @@
     </div>
   </div>
 </div>
+-->

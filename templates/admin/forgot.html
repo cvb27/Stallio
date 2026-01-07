@@ -1,3 +1,316 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reset password — Stallio</title>
+  <meta name="description" content="Reset your Stallio password and regain access to your account.">
+  <meta name="theme-color" content="#0a0f1c">
+
+  <style>
+    :root{
+      --brand-primary:#2563eb;
+      --brand-accent:#22c55e;
+      --brand-bg:#0a0f1c;
+      --brand-card:rgba(255,255,255,0.06);
+      --brand-border:rgba(255,255,255,0.12);
+      --brand-text:rgba(255,255,255,0.92);
+      --brand-muted:rgba(255,255,255,0.72);
+      --brand-danger:#ef4444;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Helvetica Neue",Arial,sans-serif;
+      color:var(--brand-text);
+      background:
+        radial-gradient(1200px 600px at 15% 10%, rgba(37,99,235,0.25), transparent 60%),
+        radial-gradient(900px 500px at 90% 20%, rgba(34,197,94,0.18), transparent 55%),
+        linear-gradient(180deg, var(--brand-bg), #070b14);
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:28px 0;
+    }
+
+    a{color:inherit}
+
+    .wrap{
+      width:min(980px, calc(100% - 40px));
+      display:grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap:22px;
+      align-items:stretch;
+    }
+    @media(max-width:980px){ .wrap{grid-template-columns:1fr} }
+
+    .panel{
+      border:1px solid var(--brand-border);
+      background:rgba(255,255,255,0.03);
+      border-radius:22px;
+      padding:22px;
+      box-shadow:0 20px 60px rgba(0,0,0,0.35);
+      overflow:hidden;
+    }
+
+    .topbrand{
+      display:flex;
+      justify-content:center;
+      margin-bottom:14px;
+    }
+    .logo{
+      width:72px;
+      height:72px;
+      border-radius:18px;
+      background:#fff;
+      padding:12px;
+      box-shadow:0 18px 50px rgba(0,0,0,0.35);
+      object-fit:contain;
+    }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      padding:8px 14px;
+      border-radius:999px;
+      border:1px solid var(--brand-border);
+      background:rgba(255,255,255,0.04);
+      font-size:13px;
+      color:var(--brand-muted);
+      margin-top:10px;
+    }
+    .dot{
+      width:8px;height:8px;border-radius:50%;
+      background:var(--brand-accent);
+      box-shadow:0 0 0 4px rgba(34,197,94,0.18);
+    }
+
+    .headline{
+      margin:14px 0 10px;
+      font-size:28px;
+      line-height:1.15;
+      letter-spacing:-0.02em;
+    }
+    .accent{
+      background:linear-gradient(90deg,#2563eb,#22c55e);
+      -webkit-background-clip:text;
+      background-clip:text;
+      -webkit-text-fill-color:transparent;
+    }
+    .sub{
+      margin:0 0 14px;
+      color:var(--brand-muted);
+      line-height:1.6;
+      font-size:14px;
+      max-width:60ch;
+    }
+
+    .steps{
+      margin-top:14px;
+      display:grid;
+      gap:10px;
+    }
+    .step{
+      padding:12px 14px;
+      border-radius:16px;
+      border:1px solid var(--brand-border);
+      background:rgba(255,255,255,0.03);
+      font-size:14px;
+      line-height:1.45;
+    }
+
+    .card{
+      border:1px solid var(--brand-border);
+      background:var(--brand-card);
+      border-radius:22px;
+      box-shadow:0 20px 60px rgba(0,0,0,0.35);
+      overflow:hidden;
+    }
+    .cardHead{
+      padding:18px 18px 12px;
+      border-bottom:1px solid var(--brand-border);
+    }
+    .cardTitle{
+      font-weight:900;
+      font-size:16px;
+      margin:0;
+    }
+    .cardSub{
+      margin:6px 0 0;
+      color:var(--brand-muted);
+      font-size:13px;
+      line-height:1.5;
+    }
+
+    form{
+      padding:16px 18px 18px;
+      display:grid;
+      gap:12px;
+    }
+    label{
+      font-size:13px;
+      color:var(--brand-muted);
+    }
+    input{
+      width:100%;
+      padding:12px 12px;
+      border-radius:14px;
+      border:1px solid var(--brand-border);
+      background:rgba(0,0,0,0.18);
+      color:var(--brand-text);
+      outline:none;
+    }
+    input:focus{
+      border-color:rgba(37,99,235,0.55);
+      box-shadow:0 0 0 4px rgba(37,99,235,0.15);
+    }
+
+    .btn{
+      padding:12px 14px;
+      border-radius:14px;
+      font-weight:800;
+      border:1px solid transparent;
+      cursor:pointer;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .btnPrimary{
+      background:linear-gradient(90deg,#2563eb,#22c55e);
+      color:#fff;
+    }
+    .btnOutline{
+      background:rgba(255,255,255,0.04);
+      border-color:var(--brand-border);
+      color:var(--brand-text);
+    }
+
+    .row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+      padding:0 18px 18px;
+    }
+
+    .link{
+      font-size:13px;
+      color:rgba(255,255,255,0.85);
+      text-decoration:none;
+    }
+    .link:hover{ text-decoration:underline; }
+
+    .alert{
+      margin:0 18px 14px;
+      padding:10px 12px;
+      border-radius:14px;
+      font-size:13px;
+      line-height:1.45;
+      border:1px solid var(--brand-border);
+      background:rgba(255,255,255,0.04);
+      color:rgba(255,255,255,0.92);
+    }
+    .alertDanger{
+      border-color:rgba(239,68,68,0.35);
+      background:rgba(239,68,68,0.10);
+    }
+    .alertSuccess{
+      border-color:rgba(34,197,94,0.30);
+      background:rgba(34,197,94,0.10);
+    }
+
+    .footNote{
+      padding:0 18px 18px;
+      color:var(--brand-muted);
+      font-size:12px;
+      line-height:1.5;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="wrap">
+
+    <!-- LEFT: Trust / Instructions -->
+    <section class="panel">
+
+      <div class="topbrand">
+        <img src="/static/admin/img/logo.svg" alt="Stallio" class="logo" loading="lazy">
+      </div>
+
+      <div class="badge"><span class="dot"></span> Secure account recovery</div>
+
+      <div class="headline">
+        Forgot your password? <span class="accent">No worries.</span>
+      </div>
+
+      <p class="sub">
+        Enter the email address associated with your Stallio account and we’ll send you a secure link to reset your password.
+      </p>
+
+      <div class="steps">
+        <div class="step"><b>1)</b> Type your email</div>
+        <div class="step"><b>2)</b> Check your inbox (and spam folder)</div>
+        <div class="step"><b>3)</b> Follow the reset link and create a new password</div>
+      </div>
+
+      <div class="footNote">
+        If you no longer have access to that email, contact support and we’ll help you recover your account.
+      </div>
+
+    </section>
+
+    <!-- RIGHT: Forgot Form -->
+    <section class="card">
+      <div class="cardHead">
+        <p class="cardTitle">Reset your password</p>
+        <p class="cardSub">We’ll email you a secure reset link.</p>
+      </div>
+
+      {# Opcional: si tu backend envía "error" o "success" #}
+      {% if error %}
+      <div class="alert alertDanger">{{ error }}</div>
+      {% endif %}
+
+      {% if success %}
+      <div class="alert alertSuccess">{{ success }}</div>
+      {% endif %}
+
+      <form method="post" action="/auth/forgot">
+        <div>
+          <label for="email">Email</label>
+          <input id="email" type="email" name="email" placeholder="you@business.com" required>
+        </div>
+
+        <button class="btn btnPrimary" type="submit">Send reset link</button>
+      </form>
+
+      <div class="row">
+        <a class="link" href="/signup">Create an account</a>
+        <a class="link" href="/login">Back to sign in</a>
+      </div>
+
+      <div class="footNote">
+        Security tip: never share your reset link with anyone.
+      </div>
+    </section>
+
+  </div>
+
+</body>
+</html>
+
+
+
+
+
+<!--
 <!DOCTYPE html>
 <html lang="en">
 
@@ -11,13 +324,13 @@
 
     <title>Stallio</title>
 
-    <!-- Custom fonts for this template-->
+    Custom fonts for this template
     <link href="/static/admin/vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
     <link
         href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i"
         rel="stylesheet">
 
-    <!-- Custom styles for this template-->
+    Custom styles for this template
     <link href="/static/admin/css/sb-admin-2.min.css" rel="stylesheet">
 
 </head>
@@ -26,14 +339,14 @@
 
     <div class="container">
 
-        <!-- Outer Row -->
+         Outer Row 
         <div class="row justify-content-center">
 
             <div class="col-xl-10 col-lg-12 col-md-9">
 
                 <div class="card o-hidden border-0 shadow-lg my-5">
                     <div class="card-body p-0">
-                        <!-- Nested Row within Card Body -->
+                        Nested Row within Card Body 
                         <div class="row">
                             <div class="col-lg-6 d-none d-lg-block bg-password-image"></div>
                             <div class="col-lg-6">
@@ -79,17 +392,18 @@
 
     </div>
 
-    <!-- Bootstrap core JavaScript-->
+    Bootstrap core JavaScript
     <script src="/static/admin/vendor/jquery/jquery.min.js"></script>
     <script src="/static/admin/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 
-    <!-- Core plugin JavaScript-->
+    Core plugin JavaScript
     <script src="/static/admin/vendor/jquery-easing/jquery.easing.min.js"></script>
 
-    <!-- Custom scripts for all pages-->
+    Custom scripts for all pages
     <script src="/static/admin/js/sb-admin-2.min.js"></script>
 
 </body>
 
 </html>
+-->
 
